@@ -1,0 +1,274 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "videolingo"
+version = "3.0.0"
+description = "AI Video Translation and Dubbing Tool"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "VideoLingo Team"},
+]
+keywords = ["video", "translation", "dubbing", "ai", "whisper", "gpt"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+requires-python = ">=3.8"
+
+# 核心依赖
+dependencies = [
+    "requests>=2.32.0",
+    "rich>=13.0.0",
+    "ruamel.yaml>=0.17.0",
+    "inquirerpy>=0.3.0",
+    "pydantic>=2.0.0",
+    "click>=8.0.0",
+    "opencv-python>=4.8.0",
+    "moviepy>=1.0.3",
+    "pydub>=0.25.1",
+    "librosa>=0.10.0",
+    "resampy>=0.4.0",
+    "yt-dlp>=2024.1.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "transformers>=4.35.0",
+    "tokenizers>=0.14.0",
+    "streamlit>=1.35.0",
+    "openpyxl>=3.1.0",
+    "PyYAML>=6.0.2",
+    "json-repair",
+    "autocorrect-py",
+    "xmltodict",
+]
+
+[project.optional-dependencies]
+# PyTorch CPU版本 (适用于无GPU或macOS)
+pytorch-cpu = [
+    "torch>=2.1.0,<2.2.0",
+    "torchaudio>=2.1.0,<2.2.0",
+]
+
+# PyTorch CUDA版本 (需要NVIDIA GPU)
+pytorch-cuda = [
+    "torch>=2.0.0,<2.1.0",
+    "torchaudio>=2.0.0,<2.1.0",
+]
+
+# 语音识别相关
+whisper = [
+    "whisperx @ git+https://github.com/m-bain/whisperx.git@7307306a9d8dd0d261e588cc933322454f853853",
+    "ctranslate2>=4.0.0",
+    "syllables",
+    "pypinyin",
+    "g2p-en",
+    "pytorch-lightning>=2.0.0",
+    "lightning>=2.0.0",
+]
+
+# 自然语言处理
+nlp = [
+    "spacy>=3.7.0",
+]
+
+# 语音合成
+tts = [
+    "edge-tts>=6.0.0",
+    "openai>=1.50.0",
+    "replicate>=0.30.0",
+]
+
+# 音源分离 (可选)
+demucs = [
+    "demucs[dev] @ git+https://github.com/adefossez/demucs",
+]
+
+# 完整安装 (包含所有功能)
+full = [
+    "videolingo[pytorch-cpu,whisper,nlp,tts]",
+]
+
+# GPU完整安装
+full-gpu = [
+    "videolingo[pytorch-cuda,whisper,nlp,tts,demucs]",
+]
+
+# 开发依赖
+dev = [
+    "videolingo[full-gpu]",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+
+# 测试依赖
+test = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/Huanshere/VideoLingo"
+Repository = "https://github.com/Huanshere/VideoLingo"
+Issues = "https://github.com/Huanshere/VideoLingo/issues"
+Documentation = "https://github.com/Huanshere/VideoLingo/blob/main/README.md"
+
+[project.scripts]
+videolingo = "st:main"
+videolingo-install = "install_uv:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["core*", "modules*", "translations*"]
+exclude = ["tests*", "docs*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.json", "*.txt", "*.md"]
+
+# Black代码格式化配置
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # 排除的目录
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+# MyPy类型检查配置
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "cv2.*",
+    "moviepy.*",
+    "pydub.*",
+    "librosa.*",
+    "spacy.*",
+    "transformers.*",
+    "torch.*",
+    "torchaudio.*",
+    "streamlit.*",
+    "yt_dlp.*",
+    "whisperx.*",
+    "edge_tts.*",
+    "openai.*",
+    "replicate.*",
+    "pynvml.*",
+    "demucs.*",
+]
+ignore_missing_imports = true
+
+# Pytest配置
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers --strict-config"
+testpaths = [
+    "tests",
+    "modules",
+]
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::FutureWarning",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "gpu: marks tests that require GPU",
+    "requires_ffmpeg: marks tests that require FFmpeg",
+]
+
+# Coverage配置
+[tool.coverage.run]
+source = [".", "modules", "core"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/.*",
+    "setup.py",
+    "install.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+# Ruff配置 (现代化的Python代码检查工具)
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+"test_*.py" = ["B011"]
+
+[tool.ruff.isort]
+known-first-party = ["videolingo", "core", "modules", "translations"] 
