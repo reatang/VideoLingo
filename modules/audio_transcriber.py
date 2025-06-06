@@ -53,18 +53,16 @@ class AudioTranscriber:
         self.audio_dir.mkdir(parents=True, exist_ok=True)
         (self.output_dir / 'log').mkdir(exist_ok=True)
         
-        # 初始化音频处理器 - 使用已有的AudioProcessor类
-        self.audio_processor = AudioProcessor(
-            target_db=target_db,
-            safe_margin=0.5
-        )
+        # 初始化音频处理器 
+        self.target_db = target_db
+        self.safe_margin = 0.5
         
         # 文件路径配置
         self.raw_audio_file = self.audio_dir / 'raw_audio.mp3'
         self.vocal_audio_file = self.audio_dir / 'vocal_audio.mp3'
         self.cleaned_chunks_file = self.output_dir / 'log' / '2_cleaned_chunks.xlsx'
     
-    def convert_video_to_audio(self, video_file: str) -> str:
+    def _convert_video_to_audio(self, video_file: str) -> str:
         """
         将视频文件转换为音频文件
         
@@ -91,70 +89,33 @@ class AudioTranscriber:
             bitrate="32k"
         )
     
-    def normalize_audio_volume(self, 
-                             audio_path: str, 
-                             output_path: Optional[str] = None,
-                             format: str = "mp3") -> str:
+    def _merge_transcription_results(self, results: List[ASRResult]) -> pd.DataFrame:
         """
-        标准化音频音量
+        合并多个转录结果
         
         Args:
-            audio_path: 输入音频文件路径
-            output_path: 输出音频文件路径, 如果为None则覆盖原文件
-            format: 输出格式
+            results: ASR转录结果列表
             
         Returns:
-            标准化后的音频文件路径
+            合并后的DataFrame
         """
-        # 使用AudioProcessor的标准化功能
-        return self.audio_processor.normalize_audio_volume(
-            audio_path, output_path or audio_path, format=format
-        )
-    
-    def get_audio_duration(self, audio_file: str) -> float:
-        """
-        获取音频文件时长
+        print("🔗 正在合并多个转录结果...")
         
-        Args:
-            audio_file: 音频文件路径
-            
-        Returns:
-            音频时长（秒）
-        """
-        # 使用AudioProcessor获取时长
-        return self.audio_processor.get_audio_duration(audio_file)
-    
-    def split_audio_by_silence(self, audio_file: str) -> List[Tuple[float, float]]:
-        """
-        基于静默检测智能分割音频
+        all_dfs = []
+        for i, result in enumerate(results):
+            print(f"📝 处理第{i+1}/{len(results)}个转录结果...")
+            df = AudioProcessor.process_transcription_result(result)
+            all_dfs.append(df)
         
-        Args:
-            audio_file: 音频文件路径
-            
-        Returns:
-            分段列表, 每个元素为(开始时间, 结束时间)的元组
-        """
-        # 使用AudioProcessor进行分段
-        return self.audio_processor.split_audio_by_silence(
-            audio_file,
-            target_length=self.target_segment_length,
-            silence_window=self.silence_window
-        )
+        # 合并所有DataFrame
+        if all_dfs:
+            combined_df = pd.concat(all_dfs, ignore_index=True)
+            print(f"✅ 转录结果合并完成，共{len(combined_df)}个词汇")
+            return combined_df
+        else:
+            raise ValueError("❌ 没有有效的转录结果可合并")
     
-    def process_transcription_result(self, result: ASRResult) -> pd.DataFrame:
-        """
-        处理转录结果, 转换为标准DataFrame格式
-        
-        Args:
-            result: ASR引擎返回的转录结果
-            
-        Returns:
-            处理后的DataFrame
-        """
-        # 使用AudioProcessor处理转录结果
-        return self.audio_processor.process_transcription_result(result.to_dict())
-    
-    def save_transcription_results(self, df: pd.DataFrame) -> str:
+    def _save_transcription_results(self, df: pd.DataFrame) -> str:
         """
         保存转录结果到Excel文件
         
@@ -164,10 +125,29 @@ class AudioTranscriber:
         Returns:
             保存的文件路径
         """
-        # 使用AudioProcessor保存结果
-        return self.audio_processor.save_transcription_results(
-            df, str(self.cleaned_chunks_file)
-        )
+        print("💾 正在保存转录结果...")
+        
+        # 定义输出文件路径
+        output_file = str(self.cleaned_chunks_file)
+        
+        # 确保输出目录存在
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        
+        # 为文本添加引号（Excel格式要求）
+        df_copy = df.copy()
+        df_copy['text'] = df_copy['text'].apply(lambda x: f'"{x}"')
+        
+        # 保存到Excel
+        try:
+            df_copy.to_excel(output_file, index=False)
+            print(f"✅ 转录结果已保存: {output_file}")
+            print(f"📈 最终数据统计: {len(df_copy)}行记录")
+            
+            return output_file
+            
+        except Exception as e:
+            print(f"❌ 保存转录结果失败: {str(e)}")
+            raise
     
     def transcribe_audio_segment(self, 
                                audio_file: str,
@@ -231,7 +211,7 @@ class AudioTranscriber:
         
         try:
             # 1. 视频转音频
-            audio_file = self.convert_video_to_audio(video_file)
+            audio_file = self._convert_video_to_audio(video_file)
             
             # 2. 人声分离（可选）
             if use_vocal_separation:
@@ -243,7 +223,11 @@ class AudioTranscriber:
                 vocal_audio = audio_file
             
             # 3. 音频分段
-            segments = self.split_audio_by_silence(audio_file)
+            segments = AudioProcessor.split_audio_by_silence(
+            audio_file,
+            target_length=self.target_segment_length,
+            silence_window=self.silence_window
+        )
             
             # 4. 分段转录
             all_results = []
@@ -255,19 +239,10 @@ class AudioTranscriber:
                 all_results.append(result)
             
             # 5. 合并结果
-            combined_words = []
-            for result in all_results:
-                result_df = result.to_dataframe()
-                if not result_df.empty:
-                    combined_words.append(result_df)
-            
-            if not combined_words:
-                raise ValueError("❌ 未能获取到有效的转录结果")
-            
-            combined_df = pd.concat(combined_words, ignore_index=True)
-            
+            combined_df = self._merge_transcription_results(all_results)
+
             # 6. 保存结果
-            output_file = self.save_transcription_results(combined_df)
+            output_file = self._save_transcription_results(combined_df)
             
             print("🎉 视频转录流程完成！")
             return output_file

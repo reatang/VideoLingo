@@ -24,24 +24,11 @@ from .base import ASRResult
 
 class AudioProcessor:
     """音频处理器类 - 封装音频相关的通用操作"""
-    
-    def __init__(self, 
-                 target_db: float = -20.0,
-                 safe_margin: float = 0.5):
-        """
-        初始化音频处理器
-        
-        Args:
-            target_db: 目标音量标准化dB值
-            safe_margin: 静默检测安全边界（秒）
-        """
-        self.target_db = target_db
-        self.safe_margin = safe_margin
-    
-    def normalize_audio_volume(self, 
-                             audio_path: str, 
+
+    @staticmethod
+    def normalize_audio_volume(audio_path: str, 
                              output_path: str, 
-                             target_db: Optional[float] = None,
+                             target_db: Optional[float] = -20.0,
                              format: str = "wav") -> str:
         """
         标准化音频音量
@@ -57,8 +44,6 @@ class AudioProcessor:
         """
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"❌ 音频文件不存在: {audio_path}")
-        
-        target_db = target_db or self.target_db
         
         try:
             audio = AudioSegment.from_file(audio_path)
@@ -78,8 +63,8 @@ class AudioProcessor:
             print(f"❌ 音频标准化失败: {str(e)}")
             raise
     
-    def convert_video_to_audio(self, 
-                             video_file: str, 
+    @staticmethod
+    def convert_video_to_audio(video_file: str, 
                              output_path: str,
                              audio_format: str = "mp3",
                              sample_rate: int = 16000,
@@ -169,7 +154,8 @@ class AudioProcessor:
             print(f"❌ 视频转音频发生未知错误: {str(e)}")
             raise
     
-    def get_audio_duration(self, audio_file: str) -> float:
+    @staticmethod
+    def get_audio_duration(audio_file: str) -> float:
         """
         获取音频文件时长
         
@@ -225,10 +211,11 @@ class AudioProcessor:
             print(f"⚠️  获取音频时长失败: {str(e)}")
             return 0.0
     
-    def split_audio_by_silence(self, 
-                             audio_file: str,
+    @staticmethod
+    def split_audio_by_silence(audio_file: str,
                              target_length: float = 30*60,
-                             silence_window: float = 60) -> List[Tuple[float, float]]:
+                             silence_window: float = 60,
+                             safe_margin: float = 0.5) -> List[Tuple[float, float]]:
         """
         基于静默检测智能分割音频
         
@@ -282,7 +269,7 @@ class AudioProcessor:
                 # 在窗口内检测静默区域
                 silence_regions = detect_silence(
                     audio[window_start:window_end],
-                    min_silence_len=int(self.safe_margin * 1000),
+                    min_silence_len=int(safe_margin * 1000),
                     silence_thresh=-30
                 )
                 
@@ -296,14 +283,14 @@ class AudioProcessor:
                 # 筛选有效的静默区域
                 valid_regions = [
                     (start, end) for start, end in silence_regions 
-                    if (end - start) >= (self.safe_margin * 2) and 
-                       threshold <= start + self.safe_margin <= threshold + silence_window
+                    if (end - start) >= (safe_margin * 2) and 
+                       threshold <= start + safe_margin <= threshold + silence_window
                 ]
                 
                 if valid_regions:
                     # 使用第一个有效静默区域
                     start, end = valid_regions[0]
-                    split_at = start + self.safe_margin
+                    split_at = start + safe_margin
                     print(f"🎯 在静默区域分割: {split_at:.1f}秒")
                 else:
                     # 没有找到合适的静默区域，使用阈值点
@@ -324,8 +311,9 @@ class AudioProcessor:
         except Exception as e:
             print(f"❌ 音频分割失败: {str(e)}")
             raise
-    
-    def process_transcription_result(self, result: ASRResult) -> pd.DataFrame:
+
+    @staticmethod
+    def process_transcription_result(result: ASRResult) -> pd.DataFrame:
         """
         处理转录结果, 转换为标准DataFrame格式
         
@@ -337,110 +325,13 @@ class AudioProcessor:
         """
         print("📊 正在处理转录结果...")
         
-        if 'segments' not in result:
-            raise ValueError("❌ 转录结果格式错误：缺少segments字段")
+        # 使用ASRResult内置的转换方法
+        df = result.to_dataframe()
         
-        all_words = []
-        
-        for segment_idx, segment in enumerate(result['segments']):
-            speaker_id = segment.get('speaker_id', None)
-            
-            if 'words' not in segment:
-                print(f"⚠️  段落{segment_idx}缺少words字段，跳过")
-                continue
-            
-            for word_idx, word in enumerate(segment['words']):
-                try:
-                    # 处理不同的word格式：字典或WordTimestamp对象
-                    if hasattr(word, 'word'):
-                        # WordTimestamp对象
-                        word_text = word.word.strip() if word.word else ""
-                        start_time = word.start
-                        end_time = word.end
-                    elif isinstance(word, dict):
-                        # 字典格式
-                        word_text = word.get("word", "").strip()
-                        start_time = word.get('start', 0)
-                        end_time = word.get('end', 0)
-                    else:
-                        print(f"⚠️  未知的word格式，跳过: {type(word)}")
-                        continue
-                    
-                    # 检查词长度
-                    if len(word_text) > 30:
-                        print(f"⚠️  检测到过长词汇，跳过: {word_text[:30]}...")
-                        continue
-                    
-                    if not word_text:
-                        print(f"⚠️  检测到空词汇，跳过")
-                        continue
-                    
-                    # 清理特殊字符（法语引号等）
-                    word_text = word_text.replace('»', '').replace('«', '')
-                    
-                    # 处理时间戳异常情况
-                    if start_time is None or end_time is None:
-                        # 使用前一个词的结束时间或寻找下一个有时间戳的词
-                        if all_words:
-                            start_time = end_time = all_words[-1]['end']
-                        else:
-                            # 寻找下一个有时间戳的词
-                            next_word = None
-                            for next_w in segment['words'][word_idx+1:]:
-                                if hasattr(next_w, 'start') and next_w.start is not None:
-                                    next_word = next_w
-                                    break
-                                elif isinstance(next_w, dict) and 'start' in next_w:
-                                    next_word = next_w
-                                    break
-                            
-                            if next_word:
-                                if hasattr(next_word, 'start'):
-                                    start_time = end_time = next_word.start
-                                else:
-                                    start_time = end_time = next_word['start']
-                            else:
-                                print(f"⚠️  无法确定词汇时间戳: {word_text}")
-                                continue
-                    
-                    word_dict = {
-                        'text': word_text,
-                        'start': start_time,
-                        'end': end_time,
-                        'speaker_id': speaker_id
-                    }
-                    
-                    all_words.append(word_dict)
-                    
-                except Exception as e:
-                    print(f"⚠️  处理词汇时出错: {str(e)}")
-                    continue
-        
-        if not all_words:
+        if df.empty:
             raise ValueError("❌ 未能提取到有效的转录结果")
         
-        df = pd.DataFrame(all_words)
-        print(f"✅ 转录结果处理完成，共{len(df)}个词汇")
-        
-        return df
-    
-    def save_transcription_results(self, df: pd.DataFrame, output_file: str) -> str:
-        """
-        保存转录结果到Excel文件
-        
-        Args:
-            df: 转录结果DataFrame
-            output_file: 输出文件路径
-            
-        Returns:
-            保存的文件路径
-        """
-        print("💾 正在保存转录结果...")
-        
-        # 确保输出目录存在
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        
-        # 数据清理
+        # 基本数据清理
         initial_rows = len(df)
         
         # 移除空文本行
@@ -455,21 +346,13 @@ class AudioProcessor:
             print(f"⚠️  检测到{len(long_words)}个过长词汇，已移除")
             df = df[df['text'].str.len() <= 30]
         
-        # 为文本添加引号（Excel格式要求）
-        df['text'] = df['text'].apply(lambda x: f'"{x}"')
+        # 清理特殊字符
+        df['text'] = df['text'].replace({'»': '', '«': ''}, regex=True)
         
-        # 保存到Excel
-        try:
-            df.to_excel(output_file, index=False)
-            print(f"✅ 转录结果已保存: {output_file}")
-            print(f"📈 最终数据统计: {len(df)}行记录")
-            
-            return output_file
-            
-        except Exception as e:
-            print(f"❌ 保存转录结果失败: {str(e)}")
-            raise
-
+        print(f"✅ 转录结果处理完成，共{len(df)}个词汇")
+        
+        return df
+    
 
 # ----------------------------------------------------------------------------
 # 兼容性函数 - 保持与原有代码的兼容性
@@ -480,37 +363,26 @@ def normalize_audio_volume(audio_path: str,
                          target_db: float = -20.0, 
                          format: str = "wav") -> str:
     """兼容性函数 - 音频音量标准化"""
-    processor = AudioProcessor(target_db=target_db)
-    return processor.normalize_audio_volume(audio_path, output_path, target_db, format)
+    return AudioProcessor.normalize_audio_volume(audio_path, output_path, target_db, format)
 
 
 def convert_video_to_audio(video_file: str, output_path: str) -> str:
     """兼容性函数 - 视频转音频"""
-    processor = AudioProcessor()
-    return processor.convert_video_to_audio(video_file, output_path)
+    return AudioProcessor.convert_video_to_audio(video_file, output_path)
 
 
 def get_audio_duration(audio_file: str) -> float:
     """兼容性函数 - 获取音频时长"""
-    processor = AudioProcessor()
-    return processor.get_audio_duration(audio_file)
+    return AudioProcessor.get_audio_duration(audio_file)
 
 
 def split_audio(audio_file: str, 
                target_len: float = 30*60, 
                win: float = 60) -> List[Tuple[float, float]]:
     """兼容性函数 - 音频分段"""
-    processor = AudioProcessor()
-    return processor.split_audio_by_silence(audio_file, target_len, win)
+    return AudioProcessor.split_audio_by_silence(audio_file, target_len, win)
 
 
 def process_transcription(result: Dict) -> pd.DataFrame:
     """兼容性函数 - 处理转录结果"""
-    processor = AudioProcessor()
-    return processor.process_transcription_result(result)
-
-
-def save_results(df: pd.DataFrame, output_file: str = "output/log/2_cleaned_chunks.xlsx") -> str:
-    """兼容性函数 - 保存转录结果"""
-    processor = AudioProcessor()
-    return processor.save_transcription_results(df, output_file) 
+    return AudioProcessor.process_transcription_result(result)
