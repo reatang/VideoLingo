@@ -121,124 +121,20 @@ def demonstrate_audio_processing():
             print(f"  片段{i+1}: {start:.1f}s - {end:.1f}s (时长: {end-start:.1f}s)")
         
         # ====================================================================
-        # 第六步：选择转录方式
+        # 第六步：完整转录
         # ====================================================================
-        print(f"\n🤔 选择转录方式:")
-        print("1. 单片段转录演示（推荐用于测试）")
-        print("2. 一键完整转录（处理所有片段）")
+        print("\n🚀 方式2: 开始一键完整转录...")
+        engine_type = "local"
         
-        choice = input("请选择 (1/2, 默认1): ").strip()
-        if choice == '2':
-            # ================================================================
-            # 方式2：一键完整转录
-            # ================================================================
-            print("\n🚀 方式2: 开始一键完整转录...")
-            engine_type = "local"
-            
-            output_file = transcriber.transcribe_video_complete(
-                video_file=video_file,
-                use_vocal_separation=False,  # 简化演示，不使用人声分离
-                engine_type=engine_type,
-                config=None
-            )
-            
-            print(f"✅ 一键转录完成！")
-            print(f"📁 转录结果已保存: {output_file}")
-            
-        else:
-            # ================================================================
-            # 方式1：单片段转录演示
-            # ================================================================
-            print("\n🎤 方式1: 开始单片段转录演示...")
-            
-            # 选择要转录的片段
-            if len(segments) > 1:
-                print(f"\n📊 检测到{len(segments)}个音频片段")
-                choice = input("是否只转录第一个片段? (y/n, 默认y): ").strip().lower()
-                if choice == 'n':
-                    selected_segments = segments
-                else:
-                    selected_segments = segments[:1]
-            else:
-                selected_segments = segments
-            
-            print(f"🎯 将转录{len(selected_segments)}个片段")
-            
-            # 设置转录引擎
-            engine_type = "local"
-            config = None
-            
-            # 逐个转录片段
-            all_results = []
-            
-            for i, (start_time, end_time) in enumerate(selected_segments):
-                print(f"\n🎤 转录片段{i+1}/{len(selected_segments)}: {start_time:.1f}s - {end_time:.1f}s")
-                
-                try:
-                    # 使用AudioTranscriber的转录方法
-                    result = transcriber.transcribe_audio_segment(
-                        audio_file=audio_file,
-                        vocal_audio_file=audio_file,  # 简化演示，使用同一文件
-                        start_time=start_time,
-                        end_time=end_time,
-                        engine_type=engine_type,
-                        config=config
-                    )
-                    
-                    all_results.append(result)
-                    
-                    # 显示部分结果
-                    if result.segments:
-                        sample_text = result.segments[0].text[:100]
-                        print(f"✅ 转录完成，检测语言: {result.language}")
-                        print(f"📝 转录样例: {sample_text}...")
-                    else:
-                        print("⚠️  未检测到语音内容")
-                    
-                except Exception as e:
-                    print(f"❌ 片段{i+1}转录失败: {str(e)}")
-                    continue
-            
-            # ================================================================
-            # 第七步：处理和保存转录结果
-            # ================================================================
-            if all_results:
-                print(f"\n📊 转录总结:")
-                total_segments = sum(len(r.segments) for r in all_results)
-                total_words = sum(len(w.word) for r in all_results for seg in r.segments for w in seg.words)
-                
-                print(f"  总片段数: {len(selected_segments)}")
-                print(f"  转录段落: {total_segments}")
-                print(f"  识别词汇: {total_words}")
-                
-                # 保存结果
-                if total_words > 0:
-                    save_choice = input("\n💾 是否保存转录结果? (y/n, 默认y): ").strip().lower()
-                    if save_choice != 'n':
-                        print("💾 保存转录结果...")
-                        
-                        # 合并所有结果
-                        all_words = []
-                        for result in all_results:
-                            result_df = result.to_dataframe()
-                            if not result_df.empty:
-                                all_words.append(result_df)
-                        
-                        if all_words:
-                            import pandas as pd
-                            combined_df = pd.concat(all_words, ignore_index=True)
-                            
-                            # 使用AudioTranscriber保存结果
-                            saved_file = transcriber.save_transcription_results(combined_df)
-                            
-                            print(f"✅ 转录结果已保存: {saved_file}")
-                            print(f"📈 数据统计: {len(combined_df)}条记录")
-                        else:
-                            print("⚠️  没有有效的转录结果可保存")
-                else:
-                    print("⚠️  未检测到有效的转录内容")
-            else:
-                print("⚠️  所有片段转录都失败了")
+        output_file = transcriber.transcribe_video_complete(
+            video_file=video_file,
+            use_vocal_separation=False,  # 简化演示，不使用人声分离
+            engine_type=engine_type,
+            config=None
+        )
+        
+        print(f"✅ 一键转录完成！")
+        print(f"📁 转录结果已保存: {output_file}")
         
         print("\n🎉 演示完成！AudioTranscriber模块工作正常")
         
