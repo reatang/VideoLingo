@@ -16,70 +16,35 @@ from openai import OpenAI
 from .models import GPTRequest, GPTResponse
 from .cache import GPTCache
 from .exceptions import GPTError, GPTTimeoutError, GPTValidationError
-
+from .config import GPTConfig
 
 class GPTClient:
     """现代化的GPT客户端类"""
+
+    config: GPTConfig
     
-    def __init__(self, 
-                 api_key: Optional[str] = None,
-                 base_url: Optional[str] = None,
-                 model: Optional[str] = None,
-                 llm_support_json: bool = False,
-                 cache_dir: str = 'output/gpt_log',
-                 config_manager=None):
+    def __init__(self, config: GPTConfig):
         """
         初始化GPT客户端
         
         Args:
-            api_key: API密钥
-            base_url: API基础URL
-            model: 模型名称
-            llm_support_json: 是否支持JSON模式
-            cache_dir: 缓存目录
-            config_manager: 配置管理器
+            config: GPT配置
         """
-        self._config_manager = config_manager
-        self._init_from_config(api_key, base_url, model, llm_support_json)
-        
+        self.config = config
+
         # 初始化OpenAI客户端
         self._client = OpenAI(
-            api_key=self.api_key,
-            base_url=self._normalize_base_url(self.base_url)
+            api_key=self.config.api_key,
+            base_url=self._normalize_base_url(self.config.base_url)
         )
         
         # 初始化缓存
-        self.cache = GPTCache(cache_dir)
+        self.cache = GPTCache(self.config.cache_dir)
         
         print(f"✅ GPT客户端初始化完成")
-        print(f"   模型: {self.model}")
-        print(f"   基础URL: {self.base_url}")
-        print(f"   JSON支持: {self.llm_support_json}")
-    
-    def _init_from_config(self, api_key, base_url, model, llm_support_json):
-        """从配置初始化参数"""
-        if self._config_manager:
-            try:
-                api_config = self._config_manager.get_api_config()
-                self.api_key = api_key or api_config.get('key', '')
-                self.base_url = base_url or api_config.get('base_url', 'https://api.siliconflow.cn')
-                self.model = model or api_config.get('model', 'deepseek-ai/DeepSeek-V3')
-                self.llm_support_json = llm_support_json if llm_support_json is not None else api_config.get('llm_support_json', False)
-            except Exception:
-                # 使用默认值
-                self.api_key = api_key or ''
-                self.base_url = base_url or 'https://api.siliconflow.cn'
-                self.model = model or 'deepseek-ai/DeepSeek-V3'
-                self.llm_support_json = llm_support_json or False
-        else:
-            # 尝试从环境变量或使用默认值
-            self.api_key = api_key or os.getenv('OPENAI_API_KEY', '')
-            self.base_url = base_url or 'https://api.siliconflow.cn'
-            self.model = model or 'deepseek-ai/DeepSeek-V3'
-            self.llm_support_json = llm_support_json or False
-        
-        if not self.api_key:
-            raise GPTError("API key is not set")
+        print(f"   模型: {self.config.model_name}")
+        print(f"   基础URL: {self.config.base_url}")
+        print(f"   JSON支持: {self.config.llm_support_json}")
     
     def _normalize_base_url(self, base_url: str) -> str:
         """标准化基础URL"""
@@ -115,7 +80,7 @@ class GPTClient:
                 response_format = {"type": "json_object"}
             
             params = {
-                "model": self.model,
+                "model": self.config.model_name,
                 "messages": messages,
                 "timeout": request.timeout,
                 **request.extra_params
@@ -145,7 +110,7 @@ class GPTClient:
                 content=parsed_content,
                 raw_content=resp_content,
                 request=request,
-                model=self.model
+                model=self.config.model_name
             )
             
             # 验证响应
@@ -167,23 +132,15 @@ class GPTClient:
                 raise GPTError(f"GPT request failed: {str(e)}")
 
 
-def create_gpt_client(config_manager=None, **kwargs) -> GPTClient:
+def create_gpt_client(config: GPTConfig) -> GPTClient:
     """
     创建GPT客户端实例
     
     Args:
-        config_manager: 配置管理器
-        **kwargs: 其他初始化参数
+        config: GPT配置
         
     Returns:
         GPT客户端实例
     """
-    if config_manager is None:
-        try:
-            from ..config import get_config_manager
-            config_manager = get_config_manager()
-        except ImportError:
-            print("⚠️  配置管理器不可用，使用默认配置")
-            config_manager = None
-    
-    return GPTClient(config_manager=config_manager, **kwargs) 
+    print(config)
+    return GPTClient(config) 

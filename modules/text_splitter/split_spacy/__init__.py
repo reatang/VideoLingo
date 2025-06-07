@@ -9,7 +9,7 @@ SpaCy Text Splitting Module
 - SplitResult: 结果类
 """
 
-from .core.splitter import SpacySplitter
+from .splitter import SpacySplitter
 from .core.config import SplitterConfig
 from .core.result import SplitResult
 from .exceptions import SpacySplitterError

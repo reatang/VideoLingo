@@ -4,10 +4,13 @@ import warnings
 from core.spacy_utils.load_nlp_model import init_nlp, SPLIT_BY_MARK_FILE
 from core.utils.config_utils import load_key, get_joiner
 from rich import print as rprint
+from spacy.language import Language
+from spacy.tokens import Doc
+
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-def split_by_mark(nlp):
+def split_by_mark(nlp: Language):
     whisper_language = load_key("whisper.language")
     language = load_key("whisper.detected_language") if whisper_language == 'auto' else whisper_language # consider force english case
     joiner = get_joiner(language)
@@ -18,12 +21,12 @@ def split_by_mark(nlp):
     # join with joiner
     input_text = joiner.join(chunks.text.to_list())
 
-    doc = nlp(input_text)
+    doc : Doc = nlp(input_text)
     assert doc.has_annotation("SENT_START")
 
     # skip - and ...
-    sentences_by_mark = []
-    current_sentence = []
+    sentences_by_mark: list[str] = []
+    current_sentence: list[str] = []
     
     # iterate all sentences
     for sent in doc.sents:

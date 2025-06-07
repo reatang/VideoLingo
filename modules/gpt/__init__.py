@@ -26,18 +26,30 @@ __all__ = [
     'GPTError',
     'GPTTimeoutError',
     'GPTValidationError',
-    'ask_gpt'
+    'ask_gpt',
+    'cleanup_global_client'
 ]
 
 # 全局客户端实例
 _global_client = None
 
-def get_global_client() -> GPTClient:
+def get_global_client(**kwargs) -> GPTClient:
     """获取全局GPT客户端实例"""
     global _global_client
     if _global_client is None:
-        _global_client = create_gpt_client()
+        _global_client = create_gpt_client(**kwargs)
     return _global_client
+
+def cleanup_global_client():
+    """清理全局GPT客户端"""
+    global _global_client
+    if _global_client is not None:
+        try:
+            _global_client._client.close()
+        except Exception as e:
+            print(f"⚠️  清理全局GPT客户端时出错: {e}")
+        finally:
+            _global_client = None
 
 def ask_gpt(prompt: str, 
            resp_type: str = None,
@@ -57,13 +69,20 @@ def ask_gpt(prompt: str,
     Returns:
         GPT响应结果
     """
-    client = get_global_client()
+    client_kwargs = {}
+    if kwargs.get('cache_dir'):
+        client_kwargs['cache_dir'] = kwargs['cache_dir']
+    client = get_global_client(**client_kwargs)
+
+    request_kwargs = {}
+    if kwargs.get('extra_params'):
+        request_kwargs['extra_params'] = kwargs['extra_params']
     request = GPTRequest(
         prompt=prompt,
         response_type=resp_type,
         validator=valid_def,
         log_title=log_title,
-        **kwargs
+        **request_kwargs
     )
     
     response = client.complete(request)

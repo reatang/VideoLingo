@@ -10,14 +10,14 @@ from rich import print as rprint
 
 from modules.common_utils import paths
 
-from .config import SplitterConfig
-from .runtime import SpacyRuntime 
-from .result import SplitResult
-from ..strategies.mark_splitter import MarkSplitter
-from ..strategies.comma_splitter import CommaSplitter
-from ..strategies.connector_splitter import ConnectorSplitter
-from ..strategies.root_splitter import RootSplitter
-from ..exceptions import SpacySplitterError, FileProcessingError
+from .core.config import SplitterConfig
+from .core.runtime import SpacyRuntime 
+from .core.result import SplitResult
+from .strategies.mark_splitter import MarkSplitter
+from .strategies.comma_splitter import CommaSplitter
+from .strategies.connector_splitter import ConnectorSplitter
+from .strategies.root_splitter import RootSplitter
+from .exceptions import SpacySplitterError, FileProcessingError
 
 class SpacySplitter:
     """

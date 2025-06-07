@@ -16,12 +16,31 @@ class SplitterConfig:
     # ------------
     # Language settings
     # ------------
+    """
+    language的功能：从哪里获取语言
+    auto: 从whisper.language获取语言
+    en: 英语
+    zh: 中文
+    ja: 日语
+    fr: 法语
+    de: 德语
+    it: 意大利语
+    es: 西班牙语
+    ru: 俄语
+    """
     language: str = "auto"
+
+    """
+        spacy 要使用的语言，这是核心参数
+    """
     detected_language: str = "en"
     
     # ------------
     # Model settings
     # ------------
+    """
+        spacy 要使用的模型名称
+    """
     spacy_model_map: Dict[str, str] = field(default_factory=dict)
     
     # ------------

@@ -15,11 +15,11 @@ def get_filepath_by_output_dir(filename: str, output_base_dir: str = "output") -
 
 # 获得一个log目录
 def get_filepath_by_log_dir(filename: str, output_base_dir: str = "output", log_dir: str = "log") -> Path:
-    return get_filepath_by_output_dir(os.path.join(filename, log_dir), output_base_dir=output_base_dir)
+    return get_filepath_by_output_dir(os.path.join(log_dir, filename), output_base_dir=output_base_dir)
 
 # 获得一个temp目录
 def get_filepath_by_temp_dir(filename: str, output_base_dir: str = "output", temp_dir: str = "temp") -> Path:
-    return get_filepath_by_output_dir(os.path.join(filename, temp_dir), output_base_dir=output_base_dir)
+    return get_filepath_by_output_dir(os.path.join(temp_dir, filename), output_base_dir=output_base_dir)
 
 def get_filepath_by_default(filename: str, output_base_dir: str = "output") -> Path:
     # 如果filename是绝对路径，则直接返回
