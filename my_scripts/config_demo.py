@@ -349,7 +349,6 @@ def demo_asr_integration():
                 
                 # 6. 创建引擎实例演示（使用配置文件参数）
                 print("\n6. 创建引擎实例（使用配置文件参数）...")
-                print("   注意观察是否跳过了镜像检测...")
                 engine = create_asr_engine(selected)
                 print(f"   创建的引擎实例: {engine}")
                 

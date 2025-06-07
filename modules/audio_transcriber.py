@@ -22,6 +22,7 @@ from pathlib import Path
 from modules.asr_backend.base import ASRResult
 from modules.asr_backend.utils import AudioProcessor
 from modules.asr_backend.factory import create_asr_engine, cleanup_all_engines
+from modules.common_utils import paths
 
 
 class AudioTranscriber:
@@ -60,7 +61,6 @@ class AudioTranscriber:
         # 文件路径配置
         self.raw_audio_file = self.audio_dir / 'raw_audio.mp3'
         self.vocal_audio_file = self.audio_dir / 'vocal_audio.mp3'
-        self.cleaned_chunks_file = self.output_dir / 'log' / '2_cleaned_chunks.xlsx'
     
     def _convert_video_to_audio(self, video_file: str) -> str:
         """
@@ -115,7 +115,7 @@ class AudioTranscriber:
         else:
             raise ValueError("❌ 没有有效的转录结果可合并")
     
-    def _save_transcription_results(self, df: pd.DataFrame) -> str:
+    def _save_transcription_results(self, df: pd.DataFrame, output_xlsx_file: str) -> str:
         """
         保存转录结果到Excel文件
         
@@ -128,7 +128,7 @@ class AudioTranscriber:
         print("💾 正在保存转录结果...")
         
         # 定义输出文件路径
-        output_file = str(self.cleaned_chunks_file)
+        output_file = output_xlsx_file
         
         # 确保输出目录存在
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -192,6 +192,7 @@ class AudioTranscriber:
     
     def transcribe_video_complete(self, 
                                 video_file: str,
+                                output_xlsx_file: Optional[str] = None,
                                 use_vocal_separation: bool = False,
                                 engine_type: str = "local",
                                 config: Optional[Dict] = None) -> str:
@@ -200,6 +201,7 @@ class AudioTranscriber:
         
         Args:
             video_file: 视频文件路径
+            output_xlsx_file: 输出Excel文件名
             use_vocal_separation: 是否使用人声分离
             engine_type: ASR引擎类型
             config: 引擎配置
@@ -208,6 +210,11 @@ class AudioTranscriber:
             保存的转录结果文件路径
         """
         print("🚀 开始完整视频转录流程...")
+
+        if output_xlsx_file is None:
+            output_xlsx_file = paths.get_filepath_by_log_dir('cleaned_chunks.xlsx', output_base_dir=self.output_dir)
+        else:
+            output_xlsx_file = paths.get_filepath_by_default(output_xlsx_file, output_base_dir=self.output_dir)
         
         try:
             # 1. 视频转音频
@@ -242,7 +249,7 @@ class AudioTranscriber:
             combined_df = self._merge_transcription_results(all_results)
 
             # 6. 保存结果
-            output_file = self._save_transcription_results(combined_df)
+            output_file = self._save_transcription_results(combined_df, output_xlsx_file)
             
             print("🎉 视频转录流程完成！")
             return output_file
