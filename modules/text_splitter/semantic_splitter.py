@@ -294,7 +294,7 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
         
         # 保存结果
         if not output_file:
-            output_file = self.output_dir / "split_by_meaning.txt"
+            output_file = paths.get_filepath_by_default("split_by_meaning.txt", self.output_dir)
         else:
             output_file = paths.get_filepath_by_default(output_file, output_base_dir=self.output_dir)
         
@@ -322,7 +322,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         input_file = sys.argv[1]
     else:
-        input_file = "output/nlp_split_result.txt"
+        input_file = "output/split_by_nlp.txt"
     
     try:
         splitter = SemanticSplitter()

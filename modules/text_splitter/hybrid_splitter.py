@@ -74,6 +74,8 @@ class HybridSplitter:
             # ================================================================
             print("\n📍 第一阶段：NLP分割")
             print("-" * 30)
+
+            input_file = paths.get_filepath_by_default(input_file, output_base_dir=self.output_dir)
             
             nlp_result_file = self.nlp_splitter.split_file(input_file)
             print(f"📁 NLP分割结果: {nlp_result_file}")
@@ -86,7 +88,7 @@ class HybridSplitter:
             
             # 设置最终输出文件名
             if not output_file:
-                final_output = self.output_dir / "final_split_result.txt"
+                final_output = paths.get_filepath_by_default("split_by_meaning.txt", output_base_dir=self.output_dir)
             else:
                 final_output = paths.get_filepath_by_default(output_file, output_base_dir=self.output_dir)
             
@@ -152,11 +154,11 @@ class HybridSplitter:
             # 发生错误时返回原始句子
             return sentences
     
-    def _print_final_summary(self, input_file: str, output_file: str):
+    def _print_final_summary(self, input_file: Path, output_file: Path):
         """打印最终统计摘要"""
         try:
             # 读取原始文件统计
-            if input_file.endswith('.xlsx'):
+            if input_file.suffix == '.xlsx':
                 import pandas as pd
                 df = pd.read_excel(input_file)
                 original_count = len(df)
@@ -176,27 +178,10 @@ class HybridSplitter:
             print(f"   分割比例: {final_count/original_count:.2f}x")
             
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             print(f"⚠️  无法生成统计摘要: {e}")
     
-    def cleanup(self):
-        """清理资源"""
-        # 目前不需要特殊清理，预留接口
-        pass
-    
-    def __enter__(self):
-        """上下文管理器入口"""
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """上下文管理器出口，确保资源清理"""
-        self.cleanup()
-        # 清理子分割器
-        if hasattr(self.nlp_splitter, 'cleanup'):
-            self.nlp_splitter.cleanup()
-        if hasattr(self.semantic_splitter, 'cleanup'):
-            self.semantic_splitter.cleanup()
-        return False
-
 
 # ----------------------------------------------------------------------------
 # 独立运行测试

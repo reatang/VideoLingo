@@ -28,18 +28,18 @@ class SplitterConfig:
     es: 西班牙语
     ru: 俄语
     """
-    language: str = "auto"
+    language: str = field(default="auto")
 
     """
-        spacy 要使用的语言，这是核心参数
+        spacy要使用的语言，这是核心参数
     """
-    detected_language: str = "en"
+    detected_language: str = field(default="en")
     
     # ------------
     # Model settings
     # ------------
     """
-        spacy 要使用的模型名称
+        spacy模型名列表
     """
     spacy_model_map: Dict[str, str] = field(default_factory=dict)
     
@@ -78,12 +78,7 @@ class SplitterConfig:
         
         # set detected language if auto, load from global config
         if self.language == "auto":
-            whisper_language = config_manager.load_key("whisper.language", "auto")
-            # Follow the logic from old code
-            if whisper_language == "en":
-                 self.detected_language = "en"
-            else:
-                self.detected_language = config_manager.load_key("whisper.detected_language", "en")
+            self.detected_language = config_manager.load_key("whisper.language", "en")
         else:
             self.detected_language = self.language
 

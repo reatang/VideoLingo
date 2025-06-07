@@ -16,8 +16,7 @@ import sys
 import os
 from pathlib import Path
 
-from modules.text_splitter import TextSplitter
-from modules.config import get_config_manager
+from modules.text_splitter import split_text_complete
 
 
 # 添加项目根目录到Python路径
@@ -29,46 +28,47 @@ def demonstrate_basic_splitting():
     print("\n📝 演示基础文本分割功能")
     print("=" * 50)
 
-    # 获取配置管理器
-    config = get_config_manager()
-    
     try:
         
-        # 1. 基础初始化
-        print("1. 初始化TextSplitter...")
-        splitter = TextSplitter(
-            output_dir="my_scripts/output",
-            max_split_length=15,
-            max_workers=2
-        )
-        
-        # 3. 运行完整分割流程（不使用语义分割）
-        print("\n2. 执行基础分割流程（不含语义分割）...")
-        final_file = splitter.process_complete_split(
+        s1 = split_text_complete(
             input_file="log/cleaned_chunks.xlsx",
+            output_dir="my_scripts/output",
             output_file="log/split_by_nlp.txt",
-            enable_comma_split=True,
-            enable_semantic_split=False,
-            save_intermediate_files=True
+            use_semantic_split=False,
+            keep_intermediate_files=True
         )
-        
-        print(f"✅ 基础分割完成！结果文件: {final_file}")
-        
-        # 4. 显示结果预览
-        if Path(final_file).exists():
-            with open(final_file, 'r', encoding='utf-8') as f:
-                lines = f.readlines()[:8]
-            
-            print(f"\n📋 结果预览 (前{len(lines)}行):")
-            for i, line in enumerate(lines, 1):
-                print(f"  {i:2d}. {line.strip()}")
         
         return True
         
     except Exception as e:
-        print(f"❌ 基础分割演示失败: {str(e)}")
         import traceback
         traceback.print_exc()
+
+        print(f"❌ 基础分割演示失败: {str(e)}")
+        return False
+
+def demonstrate_semantic_splitting():
+    """演示语义分割功能"""
+    print("\n📝 演示语义文本分割功能")
+    print("=" * 50)
+
+    try:
+        
+        s1 = split_text_complete(
+            input_file="log/cleaned_chunks.xlsx",
+            output_dir="my_scripts/output",
+            output_file="log/split_by_meaning.txt",
+            use_semantic_split=True,
+            keep_intermediate_files=True
+        )
+        
+        return True
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+
+        print(f"❌ 语义分割演示失败: {str(e)}")
         return False
 
 def main():
@@ -80,7 +80,8 @@ def main():
     output_dir = Path("my_scripts/output")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    demonstrate_basic_splitting()
+    # demonstrate_basic_splitting()
+    demonstrate_semantic_splitting()
     
     print("\n🎉 TextSplitter演示程序结束！")
 

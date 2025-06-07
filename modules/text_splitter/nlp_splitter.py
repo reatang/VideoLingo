@@ -52,7 +52,7 @@ class NLPSplitter:
         
         self.splitter = SpacySplitter(self.config)
     
-    def split_file(self, input_file: str) -> str:
+    def split_file(self, input_file: str, output_file: Optional[str] = None) -> str:
         """
         对文件进行NLP分割
         
@@ -68,9 +68,14 @@ class NLPSplitter:
         if not os.path.isabs(input_file):
             input_file = paths.get_filepath_by_default(input_file)
         
+        if output_file is None:
+            output_file = paths.get_filepath_by_default("split_by_nlp.txt", output_base_dir=self.output_dir)
+        else:
+            output_file = paths.get_filepath_by_default(output_file, output_base_dir=self.output_dir)
+        
         # 启动分割器并处理
         with self.splitter:
-            result = self.splitter.process_file(input_file)
+            result = self.splitter.process_file(input_file, output_file)
         
         if result.success:
             print("✅ NLP分割完成！")
@@ -120,20 +125,6 @@ class NLPSplitter:
         
         print(f"✅ NLP句子分割完成: {len(sentences)} -> {len(current_sentences)}")
         return current_sentences
-
-    def cleanup(self):
-        """清理资源"""
-        if hasattr(self.splitter, 'cleanup'):
-            self.splitter.cleanup()
-    
-    def __enter__(self):
-        """上下文管理器入口"""
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """上下文管理器出口，确保资源清理"""
-        self.cleanup()
-        return False
 
 
 # ----------------------------------------------------------------------------

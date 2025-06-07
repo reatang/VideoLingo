@@ -45,13 +45,15 @@ def split_text_complete(input_file: str,
     """
     if use_semantic_split:
         # 使用混合分割（NLP + 语义）
-        with HybridSplitter(
+        splitter = HybridSplitter(
             output_dir=output_dir,
             max_split_length=max_split_length,
             keep_intermediate_files=keep_intermediate_files
-        ) as splitter:
-            return splitter.split_file(input_file, output_file)
+        )
+
+        return splitter.split_file(input_file, output_file)
     else:
         # 仅使用NLP分割
-        with NLPSplitter(output_dir=output_dir) as splitter:
-            return splitter.split_file(input_file) 
+        splitter = NLPSplitter(output_dir=output_dir)
+
+        return splitter.split_file(input_file, output_file) 

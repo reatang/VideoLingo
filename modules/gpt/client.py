@@ -76,7 +76,7 @@ class GPTClient:
             
             # 设置响应格式
             response_format = None
-            if request.response_type == "json" and self.llm_support_json:
+            if request.response_type == "json" and self.config.llm_support_json:
                 response_format = {"type": "json_object"}
             
             params = {
@@ -142,5 +142,5 @@ def create_gpt_client(config: GPTConfig) -> GPTClient:
     Returns:
         GPT客户端实例
     """
-    print(config)
+
     return GPTClient(config) 

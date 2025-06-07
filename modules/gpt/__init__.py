@@ -15,6 +15,7 @@ from .client import GPTClient, create_gpt_client
 from .cache import GPTCache
 from .models import GPTRequest, GPTResponse
 from .exceptions import GPTError, GPTTimeoutError, GPTValidationError
+from .config import GPTConfig
 
 # 导出主要API
 __all__ = [
@@ -37,7 +38,7 @@ def get_global_client(**kwargs) -> GPTClient:
     """获取全局GPT客户端实例"""
     global _global_client
     if _global_client is None:
-        _global_client = create_gpt_client(**kwargs)
+        _global_client = create_gpt_client(GPTConfig(**kwargs))
     return _global_client
 
 def cleanup_global_client():
