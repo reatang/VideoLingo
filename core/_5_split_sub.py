@@ -43,6 +43,10 @@ def align_subs(src_sub: str, tr_sub: str, src_part: str) -> Tuple[List[str], Lis
     align_data = parsed['align']
     src_parts = src_part.split('\n')
     tr_parts = [item[f'target_part_{i+1}'].strip() for i, item in enumerate(align_data)]
+
+    # TODO 此处在重构的时候也需要注意。src_part中没有[br]，但是align_data中却有[br]
+    if len(src_parts) != len(tr_parts):
+        tr_parts = ["\n".join(tr_parts)]
     
     whisper_language = load_key("whisper.language")
     language = load_key("whisper.detected_language") if whisper_language == 'auto' else whisper_language
@@ -122,8 +126,9 @@ def split_for_sub_main():
     elif len(remerged) > len(src):
         src += [None] * (len(remerged) - len(src))
     
-    pd.DataFrame({'Source': split_src, 'Translation': split_trans}).to_excel(_5_SPLIT_SUB, index=False)
     pd.DataFrame({'Source': src, 'Translation': remerged}).to_excel(_5_REMERGED, index=False)
+    pd.DataFrame({'Source': split_src, 'Translation': split_trans}).to_excel(_5_SPLIT_SUB, index=False)
+    
 
 if __name__ == '__main__':
     split_for_sub_main()

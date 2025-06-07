@@ -42,12 +42,26 @@ def text_processing_section():
                 st.rerun()
             return True
 
+# 嵌入重构的模块
+
+from pathlib import Path
+from modules.audio_transcriber import transcribe_video_complete
+from modules.text_splitter import split_text_complete
+from core.utils.models import (
+    _2_CLEANED_CHUNKS,
+    _3_2_SPLIT_BY_MEANING,
+    
+)
+
 def process_text():
     with st.spinner(t("Using Whisper for transcription...")):
-        _2_asr.transcribe()
+        from core._1_ytdlp import find_video_files
+        input_file = find_video_files()
+        if not Path(_2_CLEANED_CHUNKS).exists():
+            output_file = transcribe_video_complete(input_file)
     with st.spinner(t("Splitting long sentences...")):  
-        _3_1_split_nlp.split_by_spacy()
-        _3_2_split_meaning.split_sentences_by_meaning()
+        if not Path(_3_2_SPLIT_BY_MEANING).exists():
+            split_text_complete(output_file, keep_intermediate_files=True)
     with st.spinner(t("Summarizing and translating...")):
         _4_1_summarize.get_summary()
         if load_key("pause_before_translate"):

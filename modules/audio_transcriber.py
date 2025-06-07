@@ -30,7 +30,6 @@ class AudioTranscriber:
     
     def __init__(self,
                  output_dir: str = 'output',
-                 audio_dir: str = 'output/audio', 
                  target_segment_length: float = 30*60,
                  silence_window: float = 60,
                  target_db: float = -20.0):
@@ -39,13 +38,12 @@ class AudioTranscriber:
         
         Args:
             output_dir: 输出目录
-            audio_dir: 音频文件目录
             target_segment_length: 目标分段长度（秒）
             silence_window: 静默检测窗口（秒）
             target_db: 目标音量标准化dB值
         """
         self.output_dir = Path(output_dir)
-        self.audio_dir = Path(audio_dir)
+        self.audio_dir = self.output_dir / "audio"
         self.target_segment_length = target_segment_length
         self.silence_window = silence_window
         
@@ -80,7 +78,7 @@ class AudioTranscriber:
             return str(self.raw_audio_file)
         
         # 使用AudioProcessor进行转换
-        return self.audio_processor.convert_video_to_audio(
+        return AudioProcessor.convert_video_to_audio(
             video_file,
             str(self.raw_audio_file),
             audio_format="mp3",
@@ -261,6 +259,18 @@ class AudioTranscriber:
             # 确保清理所有引擎资源
             cleanup_all_engines()
 
+
+def transcribe_video_complete(video_file: str,
+                              output_dir: str = "output",
+                             output_xlsx_file: Optional[str] = None,
+                             use_vocal_separation: bool = False,
+                             engine_type: str = "local",
+                             config: Optional[Dict] = None) -> str:
+    """
+    一键完成视频转录的便捷接口
+    """
+    transcriber = AudioTranscriber(output_dir=output_dir)
+    return transcriber.transcribe_video_complete(video_file, output_xlsx_file, use_vocal_separation, engine_type, config)
 
 # ----------------------------------------------------------------------------
 # 独立运行测试

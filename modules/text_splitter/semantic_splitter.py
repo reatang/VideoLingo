@@ -168,7 +168,6 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
                     resp_type='json', 
                     valid_def=valid_split, 
                     log_title='semantic_split',
-                    cache_dir=self.output_dir / "gpt_log"
                 )
                 
                 choice = response_data.get("choice", "1")
