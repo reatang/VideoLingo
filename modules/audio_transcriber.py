@@ -57,8 +57,8 @@ class AudioTranscriber:
         self.safe_margin = 0.5
         
         # 文件路径配置
-        self.raw_audio_file = self.audio_dir / 'raw_audio.mp3'
-        self.vocal_audio_file = self.audio_dir / 'vocal_audio.mp3'
+        self.raw_audio_file = self.audio_dir / 'raw.mp3'
+        self.vocal_audio_file = self.audio_dir / 'vocal.mp3'
     
     def _convert_video_to_audio(self, video_file: str) -> str:
         """
@@ -222,17 +222,18 @@ class AudioTranscriber:
             if use_vocal_separation:
                 print("🎵 正在进行人声分离...")
                 vocal_audio = str(self.vocal_audio_file)
-                # 这里需要外部提供人声分离函数
-                # vocal_separation_func(audio_file, vocal_audio)
+                # 这里需要外部提供人声分离函数，分离后进行音量标准化
+                # 假设人声分离已完成，对分离后的音频进行标准化
+                AudioProcessor.normalize_audio_volume(audio_file, vocal_audio, target_db=self.target_db, format="mp3")
             else:
                 vocal_audio = audio_file
             
             # 3. 音频分段
             segments = AudioProcessor.split_audio_by_silence(
-            audio_file,
-            target_length=self.target_segment_length,
-            silence_window=self.silence_window
-        )
+                audio_file,
+                target_length=self.target_segment_length,
+                silence_window=self.silence_window
+            )
             
             # 4. 分段转录
             all_results = []
