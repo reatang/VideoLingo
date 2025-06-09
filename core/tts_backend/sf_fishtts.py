@@ -42,24 +42,36 @@ def siliconflow_fish_tts(text, save_path, mode="preset", voice_id=None, ref_audi
         }
     else: raise ValueError("Invalid mode")
 
-    response = requests.post(API_URL_SPEECH, json=payload, headers=headers)
-    if response.status_code == 200:
-        wav_file_path = Path(save_path).with_suffix('.wav')
-        wav_file_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(wav_file_path, 'wb') as f: f.write(response.content)
-        
-        if check_duration:
-            duration = get_audio_duration(wav_file_path)
-            rprint(f"[blue]Audio Duration: {duration:.2f} seconds")
-            
-        rprint(f"[green]Successfully generated audio file: {wav_file_path}")
-        return True
-        
-    error_msg = response.json()
-    rprint(f"[red]Failed to generate audio | HTTP {response.status_code} (Attempt {attempt + 1}/{max_retries})")
-    rprint(f"[red]Text: {text}")
-    rprint(f"[red]Error details: {error_msg}")
-            
+    attempt = 0
+    max_retries = 3
+    while attempt < max_retries:
+        try:
+            response = requests.post(API_URL_SPEECH, json=payload, headers=headers)
+            if response.status_code == 200:
+                wav_file_path = Path(save_path).with_suffix('.wav')
+                wav_file_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(wav_file_path, 'wb') as f: f.write(response.content)
+                
+                if check_duration:
+                    duration = get_audio_duration(wav_file_path)
+                    rprint(f"[blue]Audio Duration: {duration:.2f} seconds")
+                    
+                rprint(f"[green]Successfully generated audio file: {wav_file_path}")
+                return True
+            else:
+                error_msg = response.json()
+                rprint(f"[red]Failed to generate audio | HTTP {response.status_code} (Attempt {attempt + 1}/{max_retries})")
+                rprint(f"[red]Text: {text}")
+                rprint(f"[red]Error details: {error_msg}")
+                attempt += 1
+                time.sleep(1)
+        except Exception as e:
+            rprint(f"[red]Failed to generate audio | Exception: {e} (Attempt {attempt + 1}/{max_retries})")
+            rprint(f"[red]Text: {text}")
+            rprint(f"[red]Error details: {e}")
+            attempt += 1
+            time.sleep(1)
+                
     return False
 
 @except_handler("Failed to create custom voice")
