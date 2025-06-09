@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from modules.config import get_global_config
+from modules.configs import get_global_config
 
 @dataclass
 class GPTConfig:

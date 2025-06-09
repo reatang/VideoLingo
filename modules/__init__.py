@@ -12,7 +12,7 @@ __version__ = '1.0.0'
 
 # 可选的便捷导入
 try:
-    from .config import load_key, update_key, get_joiner
+    from .configs import load_key, update_key, get_joiner
     __all__ = [
         'load_key', 
         'update_key', 

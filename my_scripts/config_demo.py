@@ -26,7 +26,7 @@ def demo_basic_config_access():
     print("-" * 50)
     
     try:
-        from modules.config import load_key, update_key, ConfigManager
+        from modules.configs import load_key, update_key, ConfigManager
         
         # 1. 使用便捷函数读取配置
         print("1. 使用便捷函数读取配置...")
@@ -76,7 +76,7 @@ def demo_specialized_config_getters():
     print("-" * 50)
     
     try:
-        from modules.config import ConfigManager
+        from modules.configs import ConfigManager
         
         config_manager = ConfigManager()
         
@@ -132,7 +132,7 @@ def demo_config_utils():
     print("-" * 50)
     
     try:
-        from modules.config.utils import (
+        from modules.configs.utils import (
             get_joiner, 
             validate_language_code,
             validate_file_format,
@@ -209,7 +209,7 @@ def demo_config_models():
     print("-" * 50)
     
     try:
-        from modules.config.models import (
+        from modules.configs.models import (
             WhisperConfig,
             APIConfig,
             ASRConfig,
@@ -381,8 +381,8 @@ def demo_config_management():
     print("-" * 50)
     
     try:
-        from modules.config import ConfigManager
-        from modules.config.utils import create_config_backup
+        from modules.configs import ConfigManager
+        from modules.configs.utils import create_config_backup
         
         config_manager = ConfigManager()
         

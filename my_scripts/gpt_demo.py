@@ -1,6 +1,6 @@
-from modules.gpt import create_gpt_client
-from modules.gpt.models import GPTRequest
-from modules.gpt.config import GPTConfig
+from modules.gpts import create_gpt_client
+from modules.gpts.models import GPTRequest
+from modules.gpts.config import GPTConfig
 
 
 client = create_gpt_client(GPTConfig())

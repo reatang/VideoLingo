@@ -133,7 +133,7 @@ def main():
 
     # 初始化配置模块
     try:
-        from modules.config import get_config_manager
+        from modules.configs import get_config_manager
         config = get_config_manager()
         print("✅ 配置模块加载成功")
     except Exception as e:

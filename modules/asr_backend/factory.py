@@ -35,7 +35,7 @@ class ASREngineFactory:
         """获取配置管理器实例"""
         if self._config_manager is None:
             try:
-                from ..config import get_global_config
+                from ..configs import get_global_config
                 self._config_manager = get_global_config()
             except ImportError:
                 print("⚠️  配置管理器不可用，使用默认配置")

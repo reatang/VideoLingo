@@ -15,9 +15,9 @@ from pathlib import Path
 from typing import List, Optional
 from difflib import SequenceMatcher
 
-from modules.gpt import ask_gpt
-from modules.config import get_config_manager
-from modules.common_utils import paths
+from modules.gpts import ask_gpt
+from modules.configs import get_config_manager
+from modules.commons import paths
 
 
 class SemanticSplitter:
@@ -255,24 +255,6 @@ Note: Start you answer with ```json and end with ```, do not add any other text.
         
         print(f"✅ 语义分割完成: {len(sentences)} -> {len(result_sentences)}")
         return result_sentences
-    
-    def cleanup(self):
-        """清理资源"""
-        try:
-            # 清理GPT全局客户端
-            from modules.gpt import cleanup_global_client
-            cleanup_global_client()
-        except Exception as e:
-            print(f"⚠️  清理GPT客户端时出错: {e}")
-    
-    def __enter__(self):
-        """上下文管理器入口"""
-        return self
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """上下文管理器出口，确保资源清理"""
-        self.cleanup()
-        return False
     
     def split_file(self, input_file: str, output_file: str = None) -> str:
         """分割文件中的句子"""

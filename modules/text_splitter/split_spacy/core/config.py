@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 import os
-from modules.config import get_global_config
+from modules.configs import get_global_config
 
 @dataclass
 class SplitterConfig:
