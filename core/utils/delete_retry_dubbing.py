@@ -27,5 +27,13 @@ def delete_dubbing_files():
     else:
         print(f"Folder not found: {segs_folder}")
 
+    tmp_folder = os.path.join("output", "audio", "tmp")
+    if os.path.exists(tmp_folder):
+        try:
+            shutil.rmtree(tmp_folder)
+            print(f"Deleted folder and contents: {tmp_folder}")
+        except Exception as e:
+            print(f"Error deleting folder {tmp_folder}: {str(e)}")
+
 if __name__ == "__main__":
     delete_dubbing_files()
