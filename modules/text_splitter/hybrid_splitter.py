@@ -14,7 +14,7 @@ from typing import Optional
 
 from .nlp_splitter import NLPSplitter
 from .semantic_splitter import SemanticSplitter
-from modules.common_utils import paths
+from modules.commons import paths
 
 
 class HybridSplitter:

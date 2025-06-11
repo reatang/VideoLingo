@@ -22,7 +22,7 @@ from pathlib import Path
 from modules.asr_backend.base import ASRResult
 from modules.asr_backend.utils import AudioProcessor
 from modules.asr_backend.factory import create_asr_engine, cleanup_all_engines
-from modules.common_utils import paths
+from modules.commons import paths
 
 
 class AudioTranscriber:

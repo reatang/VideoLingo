@@ -1,272 +1,261 @@
-# Download Backend 模块
+# 现代化视频下载后端 (Download Backend)
 
-Download Backend 是 VideoLingo 项目的视频下载后端模块，使用适配器模式和策略模式支持多平台视频下载。
+这是一个基于 `yt-dlp` 的现代化视频下载系统，提供了类型安全、功能丰富的下载管理功能。
 
-## 架构特点
+## 🚀 主要特性
 
-- **适配器模式**：统一不同平台的下载接口
-- **策略模式**：根据URL自动选择合适的下载策略  
-- **工厂模式**：动态创建和管理下载引擎
-- **三阶段生命周期**：初始化期、配置期、运行期
-- **异常自处理**：模块内部异常处理，不依赖外部
+### 🎯 核心功能
+- **类型安全**: 使用 Python 类型提示和 dataclass
+- **现代架构**: 采用面向对象设计，单一职责原则
+- **配置灵活**: 支持多种分辨率、格式和下载选项
+- **错误处理**: 完善的异常处理机制
+- **进度追踪**: 实时下载进度回调
 
-## 支持的平台
+### 📊 数据管理
+- **JSON 文件存储**: 轻量级持久化存储下载历史
+- **智能查询**: 支持多维度查询已下载视频
+- **统计分析**: 详细的下载统计和存储使用情况
+- **数据导出**: 支持导出下载历史到 JSON
 
-- **YouTube** - 使用 yt-dlp，支持高质量下载和字幕
-- **Bilibili** - 使用 bilibili_api，支持FLV/MP4流和混流
-- **Generic** - 通用下载器，支持大部分视频网站
-- **扩展支持** - TikTok、Twitter、Instagram、Vimeo等（占位符）
+### 🔍 查询功能
+- 按标题、上传者过滤
+- 按下载状态过滤
+- 按时间范围查询
+- 限制返回数量
+- 获取详细统计信息
 
-## 基本使用
-
-### 快速开始
-
-```python
-from modules.download_backend import download_video, get_video_info
-
-# 自动检测平台并下载
-result = download_video(
-    url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    save_path="downloads",
-    resolution="1080"
-)
-
-if result.success:
-    print(f"下载成功: {result.video_path}")
-    print(f"文件大小: {result.file_size}")
-else:
-    print(f"下载失败: {result.error_message}")
-
-# 获取视频信息
-video_info = get_video_info("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-print(f"标题: {video_info.title}")
-print(f"时长: {video_info.duration}秒")
-```
-
-### 平台检测
-
-```python
-from modules.download_backend.utils import detect_platform, get_platform_info
-
-# 自动检测平台
-platform = detect_platform("https://www.bilibili.com/video/BV1AV411x7Gs")
-print(f"检测到平台: {platform}")  # 输出: bilibili
-
-# 获取平台信息
-info = get_platform_info(platform)
-print(f"平台名称: {info['name']}")
-print(f"描述: {info['description']}")
-```
-
-### 工厂模式使用
-
-```python
-from modules.download_backend.factory import create_download_engine, get_engine_status
-
-# 创建特定平台的下载引擎
-engine = create_download_engine("youtube")
-
-# 配置引擎
-engine.configure({
-    'save_path': 'downloads',
-    'resolution': '1080',
-    'download_thumbnail': True
-})
-
-# 执行下载
-result = engine.download("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-
-# 查看引擎状态
-status = get_engine_status()
-for platform, info in status.items():
-    print(f"{platform}: 已注册={info['registered']}, 已初始化={info['initialized']}")
-```
-
-## 配置系统
-
-### YouTube 配置
-
-```python
-from modules.download_backend.config import YoutubeConfig
-
-config = YoutubeConfig(
-    save_path="downloads",
-    resolution="1080",
-    cookies_path="youtube_cookies.txt",  # 可选：用于访问私有视频
-    download_subtitles=True,
-    subtitle_languages=['zh', 'en']
-)
-```
-
-### Bilibili 配置
-
-```python
-from modules.download_backend.config import BilibiliConfig
-
-config = BilibiliConfig(
-    save_path="downloads", 
-    resolution="1080",
-    sessdata="your_sessdata",     # Bilibili认证信息
-    bili_jct="your_bili_jct",     # 从浏览器cookie获取
-    buvid3="your_buvid3",         # 用于高质量下载
-    ffmpeg_path="ffmpeg"          # FFmpeg路径
-)
-```
-
-## 异常处理
-
-模块定义了完整的异常体系：
-
-```python
-from modules.download_backend.exceptions import (
-    DownloadError,
-    UnsupportedPlatformError,
-    NetworkError,
-    AuthenticationError,
-    ConfigurationError
-)
-
-try:
-    result = download_video("https://invalid-url.com")
-except UnsupportedPlatformError as e:
-    print(f"不支持的平台: {e}")
-    print(f"可用平台: {e.available_platforms}")
-except DownloadError as e:
-    print(f"下载失败: {e}")
-    print(f"错误详情: {e.to_dict()}")
-except NetworkError as e:
-    print(f"网络错误: {e}")
-```
-
-## 高级功能
-
-### 批量下载
-
-```python
-from modules.download_backend.adapters.youtube_adapter import YoutubeAdapter
-
-adapter = YoutubeAdapter()
-adapter.initialize()
-adapter.configure({'save_path': 'downloads'})
-
-urls = [
-    "https://www.youtube.com/watch?v=video1",
-    "https://www.youtube.com/watch?v=video2",
-    "https://www.youtube.com/watch?v=video3"
-]
-
-results = adapter.batch_download(urls)
-successful = sum(1 for r in results if r.success)
-print(f"批量下载完成: {successful}/{len(urls)} 成功")
-```
-
-### 自定义适配器
-
-```python
-from modules.download_backend.base import DownloadEngineAdapter
-from modules.download_backend.factory import register_custom_engine
-
-class CustomAdapter(DownloadEngineAdapter):
-    def __init__(self):
-        super().__init__("CustomDownloader", "custom")
-    
-    def initialize(self):
-        # 初始化逻辑
-        self._initialized = True
-    
-    def download(self, url):
-        # 下载逻辑
-        pass
-    
-    def get_video_info(self, url):
-        # 获取视频信息逻辑
-        pass
-    
-    def is_supported(self, url):
-        return "custom.com" in url
-    
-    def get_supported_domains(self):
-        return ["custom.com"]
-
-# 注册自定义适配器
-register_custom_engine("custom", CustomAdapter)
-```
-
-## 依赖要求
-
-### 基础依赖
-- `yt-dlp` - YouTube和通用下载
-- `requests` - HTTP请求
-- `pathlib` - 路径处理
-
-### 平台特定依赖
-- **Bilibili**: `bilibili_api`, `ffmpeg`
-- **高级功能**: `colorama` (Windows颜色支持)
-
-安装命令：
-```bash
-pip install yt-dlp requests bilibili_api colorama
-```
-
-## 测试
-
-运行测试验证模块功能：
-
-```bash
-cd modules/download_backend
-python test_download.py
-```
-
-## 日志配置
-
-```python
-from modules.commons.logger import setup_logger, set_global_level
-import logging
-
-# 设置调试级别
-set_global_level(logging.DEBUG)
-
-# 获取模块专用日志器
-logger = setup_logger("my_downloader")
-logger.info("开始下载")
-```
-
-## 文件结构
+## 📦 模块结构
 
 ```
 modules/download_backend/
-├── __init__.py              # 主入口和便捷函数
-├── base.py                  # 抽象基类和数据模型
-├── factory.py               # 工厂模式实现
-├── utils.py                 # 工具函数
-├── config.py                # 配置数据模型
-├── exceptions.py            # 异常定义
-├── adapters/                # 适配器实现
-│   ├── __init__.py
-│   ├── youtube_adapter.py   # YouTube适配器
-│   ├── bilibili_adapter.py  # Bilibili适配器
-│   └── generic_adapter.py   # 通用适配器
-├── test_download.py         # 测试文件
-└── README.md               # 本文档
+├── __init__.py          # 模块导入
+├── models.py            # 数据模型定义
+├── exceptions.py        # 异常类定义
+├── downloader.py        # 核心下载器
+├── manager.py           # 下载管理器
+├── example.py          # 使用示例
+└── README.md           # 文档说明
 ```
 
-## 最佳实践
+## 🛠️ 快速开始
 
-1. **使用异常处理**：总是包装下载调用在try-catch中
-2. **配置验证**：使用配置类的validate()方法验证配置
-3. **资源清理**：长期运行的应用应调用factory.shutdown()
-4. **日志记录**：启用适当的日志级别进行调试
-5. **网络优化**：配置重试次数和超时时间
-6. **文件管理**：使用safe路径创建避免文件名冲突
-
-## 向后兼容
-
-模块提供了向后兼容的函数：
+### 1. 基础使用
 
 ```python
-# 原有的下载函数仍然可用
-from modules.download_backend import download_video_ytdlp, find_video_files
+from pathlib import Path
+from modules.download_backend import (
+    DownloadManager, DownloadConfig, ResolutionType
+)
 
-download_video_ytdlp("https://youtube.com/watch?v=123", "output", "1080")
-video_path = find_video_files("output")
-``` 
+# 创建配置
+config = DownloadConfig(
+    resolution=ResolutionType.HIGH_1080P,
+    save_path=Path("downloads"),
+    enable_thumbnail=True
+)
+
+# 创建管理器
+manager = DownloadManager(config)
+
+# 下载视频
+result = manager.download_video("https://www.youtube.com/watch?v=xxx")
+print(f"下载结果: {result.status}")
+```
+
+### 2. 获取视频信息
+
+```python
+# 获取视频信息（不下载）
+video_info = manager.get_video_info("https://www.youtube.com/watch?v=xxx")
+print(f"标题: {video_info.title}")
+print(f"时长: {video_info.duration_formatted}")
+print(f"上传者: {video_info.uploader}")
+```
+
+### 3. 查询已下载视频
+
+```python
+# 查询所有已下载视频
+all_videos = manager.find_downloaded_videos()
+
+# 按条件查询
+recent_videos = manager.find_downloaded_videos(
+    title_filter="music",           # 标题包含"music"
+    days_ago=7,                     # 最近7天
+    limit=10                        # 最多10个结果
+)
+
+# 根据URL查找
+video = manager.find_downloaded_video_by_url("https://...")
+```
+
+### 4. 获取统计信息
+
+```python
+# 下载统计
+stats = manager.get_download_statistics()
+print(f"总下载数: {stats['total_downloads']}")
+print(f"成功率: {stats['success_rate']*100:.1f}%")
+
+# 存储使用情况
+storage = manager.get_storage_usage()
+print(f"总大小: {storage['total_size_formatted']}")
+```
+
+## 📋 配置选项
+
+### DownloadConfig 参数
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `resolution` | ResolutionType | HIGH_1080P | 目标分辨率 |
+| `save_path` | Path | Path("output") | 保存路径 |
+| `allowed_formats` | List[str] | ["mp4", "avi", ...] | 允许的格式 |
+| `cookies_path` | Optional[Path] | None | Cookie文件路径 |
+| `enable_thumbnail` | bool | True | 是否下载缩略图 |
+| `enable_subtitle` | bool | False | 是否下载字幕 |
+| `max_retries` | int | 3 | 最大重试次数 |
+| `timeout` | int | 300 | 超时时间(秒) |
+
+### 分辨率选项
+
+```python
+from modules.download_backend import ResolutionType
+
+ResolutionType.BEST        # 最佳质量
+ResolutionType.HIGH_1080P  # 1080p
+ResolutionType.HIGH_720P   # 720p
+ResolutionType.MEDIUM_480P # 480p
+ResolutionType.LOW_360P    # 360p
+```
+
+## 🔍 查询功能详解
+
+### find_downloaded_videos() 参数
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `title_filter` | Optional[str] | 标题模糊匹配 |
+| `uploader_filter` | Optional[str] | 上传者模糊匹配 |
+| `status_filter` | Optional[DownloadStatus] | 按状态过滤 |
+| `days_ago` | Optional[int] | 最近N天 |
+| `limit` | Optional[int] | 限制结果数量 |
+
+### 使用示例
+
+```python
+# 查询失败的下载
+failed_downloads = manager.find_downloaded_videos(
+    status_filter=DownloadStatus.FAILED
+)
+
+# 查询特定上传者的视频
+uploader_videos = manager.find_downloaded_videos(
+    uploader_filter="TED"
+)
+
+# 查询最近的音乐视频
+music_videos = manager.find_downloaded_videos(
+    title_filter="music",
+    days_ago=30,
+    limit=20
+)
+```
+
+## 📊 统计信息
+
+### get_download_statistics() 返回值
+
+```python
+{
+    "total_downloads": 150,           # 总下载数
+    "successful_downloads": 145,      # 成功下载数
+    "failed_downloads": 5,            # 失败下载数
+    "total_size_bytes": 5368709120,   # 总大小(字节)
+    "success_rate": 0.967,            # 成功率
+    "recent_downloads_7days": 12,     # 最近7天下载数
+    "top_uploaders": [                # 热门上传者
+        {"uploader": "TED", "count": 25},
+        {"uploader": "MIT", "count": 15}
+    ]
+}
+```
+
+## 🛡️ 错误处理
+
+### 异常类型
+
+```python
+from modules.download_backend.exceptions import (
+    DownloadError,          # 通用下载错误
+    VideoNotFoundError,     # 视频不存在
+    NetworkError,           # 网络错误
+    AuthenticationError     # 认证错误
+)
+
+try:
+    result = manager.download_video(url)
+except VideoNotFoundError as e:
+    print(f"视频不存在: {e}")
+except NetworkError as e:
+    print(f"网络错误: {e}")
+except DownloadError as e:
+    print(f"下载失败: {e}")
+```
+
+## 🔧 进阶功能
+
+### 1. 进度回调
+
+```python
+def progress_callback(progress: float):
+    print(f"下载进度: {progress*100:.1f}%")
+
+result = manager.download_video(url, progress_callback)
+```
+
+### 2. 数据导出
+
+```python
+# 导出下载历史
+export_path = Path("history.json")
+success = manager.export_download_history(export_path)
+```
+
+### 3. 清理功能
+
+```python
+# 清理失败的下载记录
+cleaned_count = manager.cleanup_failed_downloads()
+print(f"清理了 {cleaned_count} 条失败记录")
+```
+
+## 🔄 与原模块的对比
+
+| 特性 | 原模块 | 新模块 |
+|------|--------|--------|
+| 架构设计 | 函数式 | 面向对象 |
+| 类型安全 | ❌ | ✅ |
+| 数据持久化 | ❌ | ✅ (JSON) |
+| 查询功能 | ❌ | ✅ |
+| 统计分析 | ❌ | ✅ |
+| 进度追踪 | ❌ | ✅ |
+| 错误处理 | 基础 | 完善 |
+| 配置管理 | 基础 | 灵活 |
+
+## 📝 注意事项
+
+1. **依赖要求**: 需要安装 `yt-dlp` 库
+2. **数据存储**: 自动创建 JSON 文件存储历史记录
+3. **文件权限**: 确保有写入保存目录的权限
+4. **网络环境**: 某些视频可能需要代理或Cookie
+5. **存储空间**: 注意检查可用存储空间
+
+## 🚀 运行示例
+
+```bash
+# 运行完整示例
+python modules/download_backend/example.py
+```
+
+这个现代化的下载后端提供了完整的视频下载解决方案，不仅保留了原有功能，还大大增强了可维护性、可扩展性和用户体验。 

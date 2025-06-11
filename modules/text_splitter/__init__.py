@@ -13,7 +13,8 @@ from .nlp_splitter import NLPSplitter
 from .semantic_splitter import SemanticSplitter
 from .hybrid_splitter import HybridSplitter
 from .split_spacy import split_text as split_text_spacy
-from modules.common_utils import paths
+from modules.commons import paths
+
 # 导出主要API
 __all__ = [
     'NLPSplitter',

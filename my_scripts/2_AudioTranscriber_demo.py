@@ -89,7 +89,6 @@ def demonstrate_audio_processing():
     print("\n🔧 初始化AudioTranscriber...")
     transcriber = AudioTranscriber(
         output_dir="my_scripts/output",
-        audio_dir="my_scripts/output/audio",
         target_segment_length=30*60,  # 30分钟
         silence_window=60,           # 1分钟窗口
         target_db=-20.0

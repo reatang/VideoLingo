@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Optional
 
 from .split_spacy import SpacySplitter, SplitterConfig
-from modules.common_utils import paths
+from modules.commons import paths
 
 
 class NLPSplitter:

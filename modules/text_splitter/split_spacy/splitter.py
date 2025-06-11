@@ -8,7 +8,7 @@ import pandas as pd
 from typing import List, Optional
 from rich import print as rprint
 
-from modules.common_utils import paths
+from modules.commons import paths
 
 from .core.config import SplitterConfig
 from .core.runtime import SpacyRuntime 
