@@ -104,7 +104,7 @@ def demonstrate_audio_processing():
         output_file = transcriber.transcribe_video_complete(
             video_file=video_file,
             output_xlsx_file="log/cleaned_chunks.xlsx",
-            use_vocal_separation=False,  # 简化演示，不使用人声分离
+            use_vocal_separation=True,  # 简化演示，不使用人声分离
             engine_type=engine_type,
             config=None
         ) 

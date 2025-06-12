@@ -11,7 +11,7 @@ import os
 import time
 import subprocess
 import warnings
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TypedDict 
 
 try:
     import torch
@@ -26,18 +26,22 @@ from ..utils import AudioProcessor
 
 warnings.filterwarnings("ignore")
 
+class _LocalConfig(TypedDict):
+    model_dir: str
+    language: str
+    model_name: str
 
 class WhisperXLocalAdapter(ASREngineAdapter):
     """WhisperX本地引擎适配器"""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: Optional[_LocalConfig] = None):
         super().__init__(config)
         self.version = "1.0.0"
         
         # 配置参数
         self.model_dir = config.get('model_dir', '_model_cache_') if config else '_model_cache_'
         self.language = config.get('language', 'auto') if config else 'auto'
-        self.model_name = config.get('model_name', 'large-v2') if config else 'large-v2'
+        self.model_name = config.get('model_name', 'large-v3') if config else 'large-v3'
         
         # 运行时变量
         self.device = None
@@ -74,10 +78,22 @@ class WhisperXLocalAdapter(ASREngineAdapter):
                   vocal_audio_path: str,
                   start_time: float = 0.0,
                   end_time: Optional[float] = None) -> ASRResult:
-        """转录音频片段"""
+        """
+        转录音频片段
+        
+        Args:
+            raw_audio_path: 原始音频文件路径
+            vocal_audio_path: 人声分离后的音频文件路径
+            start_time: 开始时间
+            end_time: 结束时间
+            
+        Returns:
+            ASRResult: 转录结果
+        """
         if not self._is_initialized:
             self.initialize()
-        
+
+        # 将音频文件路径转换为绝对路径
         self._validate_audio_path(raw_audio_path)
         self._validate_audio_path(vocal_audio_path)
         
@@ -104,6 +120,8 @@ class WhisperXLocalAdapter(ASREngineAdapter):
             
             # 检查语言
             detected_language = result.get('language', 'unknown')
+            if detected_language == 'unknown':
+                print("⚠️ Error: 音频未正确识别language, detected_language参数无法识别语言，请手动配置detected_language参数")
             if detected_language == 'zh' and self.language != 'zh':
                 print("⚠️  检测到中文语音，建议设置language='zh'以获得更好效果")
             

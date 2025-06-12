@@ -221,12 +221,16 @@ class AudioTranscriber:
             # 2. 人声分离（可选）
             if use_vocal_separation:
                 print("🎵 正在进行人声分离...")
-                vocal_audio = str(self.vocal_audio_file)
-                # 这里需要外部提供人声分离函数，分离后进行音量标准化
-                # 假设人声分离已完成，对分离后的音频进行标准化
-                AudioProcessor.normalize_audio_volume(audio_file, vocal_audio, target_db=self.target_db, format="mp3")
+                vocal_audio_file = str(self.vocal_audio_file)
+                
+                # 执行人声分离
+                from modules.asr_backend import separate_audio_file
+                vocal_audio_file, background_audio_file = separate_audio_file(audio_file, self.output_dir)
+                
+                # 人声分离后，需要对音频进行音量标准化
+                vocal_audio_file = AudioProcessor.normalize_audio_volume(audio_file, vocal_audio_file, target_db=self.target_db, format="mp3")
             else:
-                vocal_audio = audio_file
+                vocal_audio_file = audio_file
             
             # 3. 音频分段
             segments = AudioProcessor.split_audio_by_silence(
@@ -240,7 +244,7 @@ class AudioTranscriber:
             for i, (start, end) in enumerate(segments):
                 print(f"🎤 转录第{i+1}/{len(segments)}个片段...")
                 result = self.transcribe_audio_segment(
-                    audio_file, vocal_audio, start, end, engine_type, config
+                    audio_file, vocal_audio_file, start, end, engine_type, config
                 )
                 all_results.append(result)
             

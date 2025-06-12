@@ -122,22 +122,6 @@ class YoutubeConfig:
 
 
 @dataclass
-class ASRConfig:
-    """ASR相关配置的组合"""
-    whisper: WhisperConfig = field(default_factory=WhisperConfig)
-    demucs: bool = True
-    
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'ASRConfig':
-        """从字典创建ASRConfig实例"""
-        whisper_data = data.get('whisper', {})
-        return cls(
-            whisper=WhisperConfig(**whisper_data),
-            demucs=data.get('demucs', True)
-        )
-
-
-@dataclass
 class TranslationConfig:
     """翻译相关配置"""
     target_language: str = "英文"

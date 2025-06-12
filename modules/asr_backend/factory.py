@@ -10,14 +10,17 @@
 
 import time
 from typing import Dict, List, Optional, Any, Type
-from .base import ASREngineBase
-from .adapters import WhisperXLocalAdapter, WhisperX302Adapter, ElevenLabsAdapter
 
+from .base import ASREngineBase, ASRConfig
+from .adapters import WhisperXLocalAdapter, WhisperX302Adapter, ElevenLabsAdapter
+from .utils import get_asr_config
 
 class ASREngineFactory:
     """ASR引擎工厂类 - 负责创建和管理ASR引擎实例"""
+
+    _config : Optional[ASRConfig]
     
-    def __init__(self, config_manager=None):
+    def __init__(self, output_dir: str, config=None):
         """
         初始化工厂
         
@@ -26,21 +29,14 @@ class ASREngineFactory:
         """
         self._engines: Dict[str, Type[ASREngineBase]] = {}
         self._instances: Dict[str, ASREngineBase] = {}
-        self._config_manager = config_manager
+        self._output_dir = output_dir
+        if config is None:
+            self._config = get_asr_config()
+        else:
+            self._config = config
         
         # 注册默认引擎
         self._register_default_engines()
-    
-    def _get_config_manager(self):
-        """获取配置管理器实例"""
-        if self._config_manager is None:
-            try:
-                from ..configs import get_global_config
-                self._config_manager = get_global_config()
-            except ImportError:
-                print("⚠️  配置管理器不可用，使用默认配置")
-                return None
-        return self._config_manager
     
     def _register_default_engines(self) -> None:
         """注册默认的ASR引擎"""
@@ -117,34 +113,28 @@ class ASREngineFactory:
         Returns:
             引擎配置字典
         """
-        config_manager = self._get_config_manager()
-        if config_manager is None:
-            return {}
         
         try:
-            # 获取Whisper基础配置
-            whisper_config = config_manager.get_whisper_config()
-            
             # 根据引擎类型返回相应配置
             if engine_type in ['local', 'whisperx_local']:
                 return {
-                    'language': whisper_config.get('language', 'auto'),
-                    'model_name': whisper_config.get('model', 'large-v3'),
-                    'model_dir': config_manager.get_model_dir()
+                    'language': self._config.language,
+                    'model_name': self._config.model,
+                    'model_dir': self._config.model_dir,
                 }
             
             elif engine_type in ['cloud', 'whisperx_302']:
                 return {
-                    'api_key': whisper_config.get('whisperX_302_api_key'),
-                    'language': whisper_config.get('language', 'auto'),
-                    'cache_dir': 'output/log'
+                    'api_key': self._config.whisperX_302_api_key,
+                    'language': self._config.language,
+                    'cache_dir': self._output_dir
                 }
             
             elif engine_type == 'elevenlabs':
                 return {
-                    'api_key': whisper_config.get('elevenlabs_api_key'),
-                    'language': whisper_config.get('language', 'auto'),
-                    'cache_dir': 'output/log'
+                    'api_key': self._config.elevenlabs_api_key,
+                    'language': self._config.language,
+                    'cache_dir': self._output_dir
                 }
             
             else:
@@ -218,19 +208,14 @@ class ASREngineFactory:
             选择的引擎名称
         """
         if preferred_order is None:
-            # 从配置获取当前Whisper运行时设置
-            config_manager = self._get_config_manager()
-            if config_manager:
+            if self._config:
                 try:
-                    whisper_config = config_manager.get_whisper_config()
-                    current_runtime = whisper_config.get('runtime', 'local')
-                    
                     # 根据配置的运行时确定优先级
-                    if current_runtime == 'local':
-                        preferred_order = ['local', 'whisperx_local', 'cloud', 'elevenlabs']
-                    elif current_runtime == 'cloud':
-                        preferred_order = ['cloud', 'whisperx_302', 'local', 'elevenlabs']
-                    elif current_runtime == 'elevenlabs':
+                    if self._config.runtime == 'local':
+                        preferred_order = ['local', 'cloud', 'elevenlabs']
+                    elif self._config.runtime == 'cloud':
+                        preferred_order = ['cloud', 'local', 'elevenlabs']
+                    elif self._config.runtime == 'elevenlabs':
                         preferred_order = ['elevenlabs', 'local', 'cloud']
                     else:
                         preferred_order = ['local', 'cloud', 'elevenlabs']
@@ -267,7 +252,7 @@ def get_asr_factory() -> ASREngineFactory:
     """获取全局ASR工厂实例"""
     global _global_factory
     if _global_factory is None:
-        _global_factory = ASREngineFactory()
+        _global_factory = ASREngineFactory(output_dir='output/log')
     return _global_factory
 
 
@@ -307,44 +292,6 @@ def register_custom_engine(name: str, engine_class: Type[ASREngineBase]) -> None
     """便捷函数 - 注册自定义引擎"""
     get_asr_factory().register_engine(name, engine_class)
 
-
-# ----------------------------------------------------------------------------
-# 兼容性函数 - 保持与原有代码的兼容性
-# ----------------------------------------------------------------------------
-
-def transcribe_audio_factory(engine_type: str, 
-                           raw_audio: str, 
-                           vocal_audio: str, 
-                           start: float, 
-                           end: float,
-                           config: Optional[Dict[str, Any]] = None) -> Dict:
-    """
-    兼容性函数 - 使用工厂模式进行转录
-    
-    Args:
-        engine_type: 引擎类型
-        raw_audio: 原始音频路径
-        vocal_audio: 人声音频路径
-        start: 开始时间
-        end: 结束时间
-        config: 引擎配置
-        
-    Returns:
-        转录结果字典（兼容原格式）
-    """
-    try:
-        # 创建引擎实例
-        engine = create_asr_engine(engine_type, config)
-        
-        # 执行转录
-        result = engine.transcribe(raw_audio, vocal_audio, start, end)
-        
-        # 转换为兼容格式
-        return result.to_dict()
-        
-    except Exception as e:
-        print(f"❌ 工厂转录失败: {str(e)}")
-        raise
 
 
 def get_engine_status_report() -> Dict[str, Any]:

@@ -11,7 +11,7 @@ import os
 import io
 import json
 import time
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TypedDict
 
 try:
     import requests
@@ -23,17 +23,21 @@ except ImportError:
 
 from ..base import ASREngineAdapter, ASRResult
 
+class _CloudConfig(TypedDict):
+    api_key: str
+    language: str
+    cache_dir: str
 
 class WhisperX302Adapter(ASREngineAdapter):
     """WhisperX 302 API引擎适配器"""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
+    def __init__(self, config: _CloudConfig):
         super().__init__(config)
         self.version = "1.0.0"
         
         # 配置参数
-        self.api_key = config.get('api_key') if config else None
-        self.language = config.get('language', 'auto') if config else 'auto'
+        self.api_key = config.get('api_key', None)
+        self.language = config.get('language', 'auto')
         self.cache_dir = config.get('cache_dir', 'output/log') if config else 'output/log'
         
         # API配置

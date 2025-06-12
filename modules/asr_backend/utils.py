@@ -355,6 +355,29 @@ class AudioProcessor:
     
 
 # ----------------------------------------------------------------------------
+# 配置读取工具
+# ----------------------------------------------------------------------------
+from ..configs import ConfigManager, get_global_config
+from .base import ASRConfig
+
+def get_asr_config(config: Optional[ConfigManager] = None) -> ASRConfig:
+    """获取ASR配置"""
+
+    if config is None:
+        config = get_global_config()
+
+    return ASRConfig(
+        language=config.load_key('whisper.language', 'auto'),
+        model=config.load_key('whisper.model', 'large-v3'),
+        detected_language=config.load_key('whisper.detected_language', 'auto'),
+        runtime=config.load_key('whisper.runtime', 'local'),
+        whisperX_302_api_key=config.load_key('whisper.whisperX_302_api_key', ''),
+        elevenlabs_api_key=config.load_key('whisper.elevenlabs_api_key', ''),
+        model_dir=config.load_key('model_dir', '_model_cache_'),
+        demucs=config.load_key('demucs', True)
+    )
+
+# ----------------------------------------------------------------------------
 # 兼容性函数 - 保持与原有代码的兼容性
 # ----------------------------------------------------------------------------
 

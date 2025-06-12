@@ -12,6 +12,21 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Union, Any
 import pandas as pd
 
+@dataclass
+class ASRConfig:
+    """ASR配置类"""
+    model: str
+    language: str
+    detected_language: str
+    runtime: str
+    whisperX_302_api_key: str
+    elevenlabs_api_key: str
+
+    # 本地 whisper 模型路径
+    model_dir: str
+
+    # 人声分离
+    demucs: bool
 
 @dataclass
 class WordTimestamp:

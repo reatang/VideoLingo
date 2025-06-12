@@ -13,7 +13,7 @@
 
 from .manager import ConfigManager, get_config_manager
 from .utils import get_joiner, validate_language_code, get_default_config
-from .models import ASRConfig, AudioConfig, TranslationConfig
+from .models import AudioConfig, TranslationConfig
 
 # 导出主要API
 __all__ = [
@@ -24,7 +24,6 @@ __all__ = [
     'get_joiner',
     'validate_language_code',
     'get_default_config',
-    'ASRConfig',
     'AudioConfig', 
     'TranslationConfig'
 ]
