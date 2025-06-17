@@ -45,6 +45,7 @@ def text_processing_section():
 # 嵌入重构的模块
 
 from pathlib import Path
+from modules.download_backend import find_video_files
 from modules.audio_transcriber import transcribe_video_complete
 from modules.text_splitter import split_text_complete
 from core.utils.models import (
@@ -55,7 +56,6 @@ from core.utils.models import (
 
 def process_text():
     with st.spinner(t("Using Whisper for transcription...")):
-        from core._1_ytdlp import find_video_files
         input_file = find_video_files()
         if not Path(_2_CLEANED_CHUNKS).exists():
             output_file = transcribe_video_complete(input_file)
