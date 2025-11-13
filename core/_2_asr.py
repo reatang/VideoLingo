@@ -1,5 +1,4 @@
 from core.utils import *
-from core.asr_backend.demucs_vl import demucs_audio
 from core.asr_backend.audio_preprocess import process_transcription, convert_video_to_audio, split_audio, save_results, normalize_audio_volume
 from core._1_ytdlp import find_video_files
 from core.utils.models import *
@@ -12,6 +11,7 @@ def transcribe():
 
     # 2. Demucs vocal separation:
     if load_key("demucs"):
+        from core.asr_backend.demucs_vl import demucs_audio
         demucs_audio()
         vocal_audio = normalize_audio_volume(_VOCAL_AUDIO_FILE, _VOCAL_AUDIO_FILE, format="mp3")
     else:

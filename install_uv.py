@@ -187,12 +187,17 @@ class ModernInstaller:
                 name="语音识别",
                 description="WhisperX和相关ASR依赖",
                 packages=[
-                    "whisperx @ git+https://github.com/m-bain/whisperx.git@7307306a9d8dd0d261e588cc933322454f853853",
+                    # Note: av is pre-installed using pip on Windows (better wheel availability)
+                    # Listed here for dependency tracking but skipped during installation
+                    "av>=15.1.0",
+                    "faster-whisper>=1.2.1",
+                    "whisperx>=3.7.4",
                     "ctranslate2>=4.0.0",
                     "syllables",
                     "pypinyin",
                     "g2p-en",
                 ],
+                optional=False,
                 install_order=5
             ),
             
@@ -216,7 +221,7 @@ class ModernInstaller:
                     "openai>=1.50.0",
                     "replicate>=0.30.0",
                 ],
-                optional=True,
+                optional=False,
                 install_order=7
             ),
             
@@ -280,7 +285,7 @@ class ModernInstaller:
         """使用uv安装单个包"""
         try:
             subprocess.run([
-                sys.executable, "-m", "uv", "pip", "install", package
+                "uv", "pip", "install", "--python", sys.executable, package
             ], check=True, capture_output=True)
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
@@ -297,8 +302,9 @@ class ModernInstaller:
         """检查并安装UV"""
         try:
             # 检查uv是否已安装
-            result = subprocess.run([sys.executable, "-m", "uv", "--version"], 
-                                 capture_output=True, text=True)
+            result = subprocess.run(["uv", "--version"], 
+                                 capture_output=True, text=True, 
+                                 encoding='utf-8', errors='ignore')
             if result.returncode == 0:
                 print(f"✅ UV已安装: {result.stdout.strip()}")
                 return True
@@ -309,12 +315,13 @@ class ModernInstaller:
         
         try:
             # 安装uv
-            subprocess.run([sys.executable, "-m", "pip", "install", "uv>=0.4.0"], 
+            subprocess.run([sys.executable, "-m", "pip", "install", "uv"], 
                          check=True, capture_output=True)
             
             # 验证安装
-            result = subprocess.run([sys.executable, "-m", "uv", "--version"], 
-                                 capture_output=True, text=True)
+            result = subprocess.run(["uv", "--version"], 
+                                 capture_output=True, text=True,
+                                 encoding='utf-8', errors='ignore')
             if result.returncode == 0:
                 print(f"✅ UV安装成功: {result.stdout.strip()}")
                 return True
@@ -353,8 +360,8 @@ class ModernInstaller:
         # 检查系统工具
         has_ffmpeg = self._check_command("ffmpeg")
         has_git = self._check_command("git")
-        has_uv = self._check_command_module("uv")
-        
+        has_uv = self._check_command("uv")
+
         # 包管理器
         package_managers = self._detect_package_managers()
         
@@ -412,7 +419,8 @@ class ModernInstaller:
             # 回退检测方法
             try:
                 result = subprocess.run(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"], 
-                                      capture_output=True, text=True, timeout=5)
+                                      capture_output=True, text=True, 
+                                      encoding='utf-8', errors='ignore', timeout=5)
                 if result.returncode == 0:
                     hardware.has_nvidia_gpu = True
                     hardware.gpu_names = [name.strip() for name in result.stdout.strip().split('\n') if name.strip()]
@@ -424,7 +432,7 @@ class ModernInstaller:
     def _check_command(self, command: str) -> bool:
         """检查命令是否可用"""
         try:
-            subprocess.run([command, "--version"], capture_output=True, check=True, timeout=5)
+            subprocess.run([command, "-h"], capture_output=True, check=True, timeout=5)
             return True
         except:
             return False
@@ -604,14 +612,38 @@ class ModernInstaller:
             elif req == "cuda" and not self.system_info.hardware.has_nvidia_gpu:
                 console.print(f"⚠️  {group.name} 需要 NVIDIA GPU")
         
+        # Special pre-installation for av on Windows using pip
+        # This works around the issue where av doesn't have wheels for Python 3.12 on PyPI
+        if (group_name == "whisper" and 
+            self.system_info.system_type == SystemType.WINDOWS):
+            console.print("  🔧 Pre-installing av package with pip (works better on Windows)...")
+            try:
+                pip_cmd = [sys.executable, "-m", "pip", "install", "av"]
+                result = subprocess.run(pip_cmd, capture_output=True, text=True,
+                                      encoding='utf-8', errors='ignore', timeout=300)
+                if result.returncode == 0:
+                    console.print("  ✅ av pre-installed successfully")
+                else:
+                    console.print("  ⚠️  av pre-installation failed, will try with uv")
+            except Exception as e:
+                console.print(f"  ⚠️  av pre-installation error: {str(e)}")
+        
         # 安装包
         success_count = 0
         total_count = len(group.packages)
         
         for package in group.packages:
             try:
+                # Skip av if we pre-installed it
+                is_av_package = package.startswith("av>=") or package.startswith("av==") or package == "av"
+                if (is_av_package and group_name == "whisper" and 
+                    self.system_info.system_type == SystemType.WINDOWS):
+                    console.print(f"  ⏩ Skipping {package} (already pre-installed)")
+                    success_count += 1
+                    continue
+                
                 if use_uv:
-                    cmd = [sys.executable, "-m", "uv", "pip", "install", package]
+                    cmd = ["uv", "pip", "install", "--python", sys.executable, package]
                 else:
                     cmd = [sys.executable, "-m", "pip", "install", package]
                 
@@ -620,13 +652,15 @@ class ModernInstaller:
                     if group_name == "pytorch_cuda":
                         cmd.extend(["--index-url", "https://download.pytorch.org/whl/cu118"])
                 
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+                result = subprocess.run(cmd, capture_output=True, text=True, 
+                                      encoding='utf-8', errors='ignore', timeout=600)
                 
                 if result.returncode == 0:
                     success_count += 1
                     print(f"  ✅ {package}")
                 else:
-                    print(f"  ❌ {package}: {result.stderr.strip()}")
+                    error_msg = result.stderr.strip() if result.stderr else "Unknown error"
+                    print(f"  ❌ {package}: {error_msg}")
                     
             except subprocess.TimeoutExpired:
                 print(f"  ⏱️  {package}: 安装超时")
@@ -703,39 +737,50 @@ class ModernInstaller:
             return False
         
         # 确定要安装的依赖组
+        # ----------------------------------------------------------------------------
+        # MINIMAL: 核心 + 媒体 + ML基础 + Web界面 + PyTorch (仅基础功能)
+        # STANDARD: MINIMAL + NLP + WhisperX + TTS (推荐，包含完整视频翻译功能)
+        # FULL: STANDARD + Demucs人声分离 (完整功能)
+        # DEVELOPMENT: FULL (开发者模式)
+        # ----------------------------------------------------------------------------
         groups_to_install = ["core", "media", "ml_core"]
         
         # 根据模式添加组
         if mode == InstallationMode.MINIMAL:
             groups_to_install.extend(["web"])
+            # 最小化安装也需要PyTorch
+            if self.system_info.hardware.has_nvidia_gpu:
+                groups_to_install.append("pytorch_cuda")
+            else:
+                groups_to_install.append("pytorch_cpu")
         elif mode == InstallationMode.STANDARD:
-            groups_to_install.extend(["nlp", "web"])
+            groups_to_install.extend(["nlp", "whisper", "tts", "web"])
             # 根据GPU选择PyTorch版本
             if self.system_info.hardware.has_nvidia_gpu:
                 groups_to_install.append("pytorch_cuda")
             else:
                 groups_to_install.append("pytorch_cpu")
         elif mode == InstallationMode.FULL:
-            groups_to_install.extend(["nlp", "tts", "whisper", "web"])
+            groups_to_install.extend(["nlp", "whisper", "tts", "demucs", "web"])
             if self.system_info.hardware.has_nvidia_gpu:
                 groups_to_install.append("pytorch_cuda")
             else:
                 groups_to_install.append("pytorch_cpu")
         elif mode == InstallationMode.DEVELOPMENT:
-            groups_to_install.extend(["nlp", "tts", "whisper", "demucs", "web"])
+            groups_to_install.extend(["nlp", "whisper", "tts", "demucs", "web"])
             groups_to_install.append("pytorch_cuda" if self.system_info.hardware.has_nvidia_gpu else "pytorch_cpu")
         
         # 按顺序安装依赖组
-        sorted_groups = sorted([self.dependency_groups[name] for name in groups_to_install], 
-                             key=lambda x: x.install_order)
+        sorted_group_items = sorted([(name, self.dependency_groups[name]) for name in groups_to_install], 
+                                   key=lambda x: x[1].install_order)
         
-        total_groups = len(sorted_groups)
+        total_groups = len(sorted_group_items)
         successful_groups = 0
         
-        for i, group in enumerate(sorted_groups, 1):
+        for i, (group_key, group) in enumerate(sorted_group_items, 1):
             console.print(f"\n📦 [{i}/{total_groups}] 安装 {group.name}...")
             
-            if self.install_dependency_group(group.name, use_uv):
+            if self.install_dependency_group(group_key, use_uv):
                 successful_groups += 1
         
         # 安装结果

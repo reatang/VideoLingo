@@ -26,7 +26,29 @@ from .factory import (
     register_custom_engine
 )
 from .utils import AudioProcessor
-from .audio_separator import AudioSeparator, separate_audio_file, demucs_audio
+
+# ----------------------------------------------------------------------------
+# Lazy import for demucs-related functions to avoid import errors
+# ----------------------------------------------------------------------------
+def _get_audio_separator_module():
+    """Lazy load audio separator module"""
+    from . import audio_separator
+    return audio_separator
+
+def AudioSeparator(*args, **kwargs):
+    """Lazy wrapper for AudioSeparator class"""
+    module = _get_audio_separator_module()
+    return module.AudioSeparator(*args, **kwargs)
+
+def separate_audio_file(*args, **kwargs):
+    """Lazy wrapper for separate_audio_file function"""
+    module = _get_audio_separator_module()
+    return module.separate_audio_file(*args, **kwargs)
+
+def demucs_audio(*args, **kwargs):
+    """Lazy wrapper for demucs_audio function"""
+    module = _get_audio_separator_module()
+    return module.demucs_audio(*args, **kwargs)
 
 
 # ----------------------------------------------------------------------------
