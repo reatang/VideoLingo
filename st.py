@@ -59,6 +59,8 @@ def process_text():
         input_file = find_video_files()
         if not Path(_2_CLEANED_CHUNKS).exists():
             output_file = transcribe_video_complete(input_file)
+        else:
+            output_file = _2_CLEANED_CHUNKS
     with st.spinner(t("Splitting long sentences...")):  
         if not Path(_3_2_SPLIT_BY_MEANING).exists():
             split_text_complete(output_file, keep_intermediate_files=True)
